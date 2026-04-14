@@ -1,13 +1,13 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "release_date": "2026-04-15",
   "min_version": "1.0.0",
-  "changelog": "Repo URL guncellendi (synergykendiyas/fabric -> mehmet44yuce-png/voicecraft-ai)",
+  "changelog": "Ana sayfaya admin panel butonu eklendi",
   "files": {
-    "updater.py": {
-      "sha256": "35690db14dff948f460c61c82b6bb935e6c40a2c372a6450d349372dbeec5f98",
-      "size": 14991,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.1/updater.py"
+    "public/index.html": {
+      "sha256": "c47bda5194a5adc1f90a367cf9a23be6fbe521c0ee5cb672054ddfb2701218e7",
+      "size": 36238,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.2/index.html"
     }
   },
   "delete": []
