@@ -23,7 +23,8 @@ BACKUP_DIR = "_backups"
 VERSION_FILE = "version.json"
 
 # Guncellenmeyecek dosyalar
-EXCLUDE = {'.env', '.installed', 'uploads', '_backups', '_staging', 'node_modules', '__pycache__'}
+EXCLUDE = {'.env', '.installed', 'uploads', '_backups', '_staging', 'node_modules', '__pycache__',
+           '.git', '.venv', 'venv', 'voicecraft', 'installer', '.vscode', '.idea', 'yedek'}
 
 class Updater:
     def __init__(self, app_dir, update_url=None):

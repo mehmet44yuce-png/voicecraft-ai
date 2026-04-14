@@ -1,23 +1,13 @@
 {
-  "version": "1.0.4",
+  "version": "1.0.5",
   "release_date": "2026-04-15",
   "min_version": "1.0.0",
-  "changelog": "Admin panele Ana Sayfa butonu + guncelleme hatasi kopyala butonu",
+  "changelog": "EXCLUDE listesine .git/.venv eklendi (manifest sismeleri onleme)",
   "files": {
-    "public/index.html": {
-      "sha256": "deff981c21f7ff9d794858fbcc68e52150996a75cb70e704bc2a470106ea0b9a",
-      "size": 36492,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.4/index.html"
-    },
-    "public/admin.html": {
-      "sha256": "f350fe65a5dd479721ffe0b74543cb4deb6f75dd228ae5e83c9452f12a53d44b",
-      "size": 114144,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.4/admin.html"
-    },
-    "public/app.js": {
-      "sha256": "904044462b038dc608513e8882e7c39ae5178dc6b0f1a31f262d90900d2f339a",
-      "size": 567285,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.4/app.js"
+    "updater.py": {
+      "sha256": "d33abf1987d8d99a045c2e4f0a54b403bbcd6f56e034303b3c264fc8957ae842",
+      "size": 15084,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.5/updater.py"
     }
   },
   "delete": []
