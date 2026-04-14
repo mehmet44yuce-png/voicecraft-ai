@@ -1,0 +1,2016 @@
+<!--
+  VoiceCraft AI — Admin Panel
+  Bağımlılık : Sıfır (CDN yok)
+  Backend    : http://localhost:3000
+  Test sistemi: Her bölüm sekme açıldığında kendi testlerini çalıştırır
+-->
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoiceCraft AI — Admin Panel</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0e1a;--bg2:#111827;--bg3:#1e293b;--border:#334155;--text:#e2e8f0;--dim:#64748b;--accent:#3b82f6;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--purple:#a855f7}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;min-width:1024px;font-size:13px}
+
+/* Sol Sekme Çubuğu */
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh}
+.sidebar-logo{padding:16px;border-bottom:1px solid var(--border);text-align:center}
+.sidebar-logo h2{font-size:15px;color:var(--accent)}
+.sidebar-logo small{color:var(--dim);font-size:10px}
+.tab-btn{display:flex;align-items:center;gap:10px;padding:12px 16px;border:none;background:none;color:var(--dim);cursor:pointer;font-size:13px;text-align:left;width:100%;border-left:3px solid transparent;transition:all .2s}
+.tab-btn:hover{background:rgba(59,130,246,.08);color:var(--text)}
+.tab-btn.active{background:rgba(59,130,246,.12);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+.tab-btn .icon{font-size:16px;width:22px;text-align:center}
+.tab-btn .badge{margin-left:auto;background:var(--bg3);padding:1px 6px;border-radius:10px;font-size:10px}
+.tab-btn .badge.fail{background:#7f1d1d;color:var(--red)}
+.tab-btn .badge.warn{background:#78350f;color:var(--yellow)}
+.tab-btn .badge.pass{background:#14532d;color:var(--green)}
+.sidebar-footer{margin-top:auto;padding:12px;border-top:1px solid var(--border);font-size:10px;color:var(--dim);text-align:center}
+
+/* İçerik Alanı */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.panel{display:none;flex:1;overflow-y:auto;padding:20px}
+.panel.active{display:block}
+.panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.panel-header h3{font-size:18px;color:var(--text)}
+.panel-header .meta{font-size:11px;color:var(--dim)}
+.btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;font-size:12px;transition:all .15s}
+.btn:hover{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-danger{border-color:#7f1d1d;color:var(--red)}
+.btn-danger:hover{background:#991b1b;border-color:#991b1b;color:#fff}
+.btn-sm{padding:3px 8px;font-size:11px}
+
+/* Metrik Kartları */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.metric-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;position:relative}
+.metric-card .val{font-size:28px;font-weight:700;color:var(--accent)}
+.metric-card .lbl{font-size:11px;color:var(--dim);margin-top:4px}
+.metric-card .sub{font-size:10px;color:var(--dim);margin-top:2px}
+.progress-ring{width:80px;height:80px;margin:0 auto 8px}
+.progress-ring circle{fill:none;stroke-width:6;stroke-linecap:round}
+.progress-ring .bg{stroke:var(--bg3)}
+.progress-ring .fg{transition:stroke-dashoffset .5s}
+
+/* Tablolar */
+.tbl{width:100%;border-collapse:collapse;background:var(--bg2);border-radius:8px;overflow:hidden;margin-bottom:12px}
+.tbl th{background:var(--bg3);padding:8px 12px;text-align:left;font-size:11px;color:var(--dim);font-weight:600;border-bottom:1px solid var(--border)}
+.tbl td{padding:7px 12px;border-bottom:1px solid rgba(51,65,85,.4);font-size:12px}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(59,130,246,.04)}
+
+/* Test Kartları */
+.test-list{margin:12px 0}
+.test-card{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:6px;margin:3px 0;font-size:12px}
+.test-card.pass{background:rgba(34,197,94,.08);border-left:3px solid var(--green)}
+.test-card.warn{background:rgba(234,179,8,.08);border-left:3px solid var(--yellow)}
+.test-card.fail{background:rgba(239,68,68,.08);border-left:3px solid var(--red)}
+.test-card .icon{font-size:14px;width:18px;text-align:center}
+.test-card .name{flex:1}
+.test-card .detail{color:var(--dim);font-size:11px}
+
+/* Log Alanı */
+.log-area{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:'Cascadia Code','Fira Code',monospace;font-size:11px;line-height:1.6;max-height:500px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+.log-error{color:var(--red)}.log-warn{color:var(--yellow)}.log-debug{color:#475569}.log-info{color:#4fc3f7}
+
+/* Alt Özet Şeridi */
+.summary-bar{position:sticky;bottom:0;background:var(--bg2);border-top:1px solid var(--border);padding:8px 20px;display:flex;align-items:center;gap:16px;font-size:12px;flex-shrink:0}
+.summary-bar .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.summary-bar .dot.pass{background:var(--green)}.summary-bar .dot.warn{background:var(--yellow)}.summary-bar .dot.fail{background:var(--red)}
+
+/* Toolbar */
+.toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.toolbar input[type=text]{background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 10px;font-size:12px;outline:none;min-width:160px}
+.toolbar input[type=text]:focus{border-color:var(--accent)}
+
+/* Ayar Slider */
+.setting-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid rgba(51,65,85,.3)}
+.setting-row label{min-width:140px;color:var(--dim);font-size:12px}
+.setting-row input[type=range]{flex:1;accent-color:var(--accent)}
+.setting-row .val{min-width:50px;text-align:right;font-weight:600;color:var(--text);font-size:13px}
+.setting-row input[type=number]{width:80px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:4px 6px;font-size:12px;outline:none}
+
+/* Checkbox */
+.chk-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px}
+.chk-row input{accent-color:var(--accent)}
+
+/* Dialog */
+.dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center}
+.dialog{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:24px;max-width:400px;width:90%}
+.dialog h4{margin-bottom:8px;color:var(--text)}.dialog p{color:var(--dim);font-size:12px;margin-bottom:16px}
+.dialog .btns{display:flex;gap:8px;justify-content:flex-end}
+
+/* Spinner */
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--bg3);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Status Dot */
+.status-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.status-dot.online{background:var(--green)}.status-dot.offline{background:var(--red)}.status-dot.slow{background:var(--yellow)}
+
+/* Proje Kartları */
+.proj-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;transition:border-color .2s}
+.proj-card:hover{border-color:var(--accent)}
+.proj-card .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.proj-card .top .date{font-size:10px;color:var(--dim);white-space:nowrap}
+.proj-card .top .name{font-size:13px;font-weight:600;color:var(--text)}
+.proj-card .top .info{font-size:11px;color:var(--dim);margin-top:2px}
+.proj-card .progress-wrap{margin:8px 0;display:flex;align-items:center;gap:10px}
+.proj-card .progress-bar{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.proj-card .progress-bar .fill{height:100%;border-radius:3px;transition:width .3s}
+.proj-card .progress-txt{font-size:11px;color:var(--dim);white-space:nowrap}
+.proj-card .badges{display:flex;flex-wrap:wrap;gap:3px;margin:6px 0}
+.proj-card .actions{display:flex;gap:6px;justify-content:flex-end;margin-top:8px}
+.step-badge{display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500}
+.step-badge.done{background:rgba(34,197,94,.15);color:var(--green)}
+.step-badge.active{background:rgba(234,179,8,.15);color:var(--yellow)}
+.step-badge.skipped{background:rgba(100,116,139,.15);color:var(--dim)}
+.step-badge.error{background:rgba(239,68,68,.15);color:var(--red)}
+.detail-panel{max-height:0;overflow:hidden;transition:max-height .25s ease}
+.detail-panel.open{max-height:800px}
+.detail-inner{padding:10px;background:var(--bg);border-radius:6px;margin-top:8px}
+.detail-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px;border-bottom:1px solid rgba(51,65,85,.3)}
+.detail-row:last-child{border-bottom:none}
+.detail-row .d-icon{width:16px;text-align:center;font-size:12px}
+.detail-row .d-name{min-width:120px;color:var(--text)}
+.detail-row .d-dur{min-width:80px;color:var(--dim)}
+.detail-row .d-size{color:var(--dim)}
+.proj-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.proj-toolbar select{background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:12px;outline:none}
+.proj-toolbar input{background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 10px;font-size:12px;outline:none;min-width:160px}
+.proj-summary{display:flex;gap:16px;font-size:12px;color:var(--dim);margin-bottom:12px;flex-wrap:wrap}
+.proj-summary b{color:var(--text)}
+
+/* Proje Detay Sayfası */
+.pd-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.pd-header .pd-back{background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;padding:4px 0}
+.pd-header .pd-back:hover{text-decoration:underline}
+.pd-header .pd-title{font-size:16px;font-weight:700;color:var(--text)}
+.pd-header .pd-meta{font-size:11px;color:var(--dim);margin-top:3px}
+.pd-header .pd-actions{display:flex;gap:6px}
+.pd-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.pd-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.pd-card .pd-val{font-size:22px;font-weight:700;color:var(--accent)}
+.pd-card .pd-lbl{font-size:10px;color:var(--dim);margin-top:3px}
+.pd-step{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:6px;border-left:3px solid var(--dim)}
+.pd-step.done{border-left-color:var(--green)}.pd-step.active{border-left-color:var(--yellow)}.pd-step.error{border-left-color:var(--red)}
+.pd-step .pd-step-top{display:flex;justify-content:space-between;align-items:center}
+.pd-step .pd-step-name{font-size:13px;font-weight:600}.pd-step .pd-step-dur{font-size:12px;color:var(--dim)}
+.pd-step .pd-step-size{font-size:11px;color:var(--dim);margin-top:3px}
+.pd-step .pd-step-btns{margin-top:6px;display:flex;gap:6px}
+.pd-spk-bar{height:14px;border-radius:3px;margin:3px 0;display:flex;align-items:center;font-size:10px;padding:0 6px;color:#fff;font-weight:600}
+.pd-transcript{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;font-size:11px;max-height:200px;overflow-y:auto}
+.pd-transcript .seg{padding:3px 0;border-bottom:1px solid rgba(51,65,85,.2)}
+.pd-transcript .seg:last-child{border-bottom:none}
+.pd-transcript .seg .ts{color:var(--accent);margin-right:8px;font-family:monospace}
+.pd-transcript .seg .spk{color:var(--yellow);margin-right:6px}
+.pd-error-log{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:8px;font-size:11px;color:var(--red)}
+
+/* Hata Geçmişi */
+.err-summary{display:flex;gap:16px;font-size:12px;color:var(--dim);margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.err-summary b{color:var(--text)}
+.err-toolbar{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.err-toolbar .filter-btn{padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:var(--bg3);color:var(--dim);cursor:pointer;font-size:11px;transition:all .15s}
+.err-toolbar .filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.err-toolbar .filter-btn:hover{border-color:var(--accent)}
+.error-row{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:6px;border-left:3px solid var(--dim)}
+.error-row.severity-critical{border-left-color:var(--red)}
+.error-row.severity-error{border-left-color:#f97316}
+.error-row.severity-warning{border-left-color:var(--yellow)}
+.error-header{display:flex;align-items:center;gap:8px;font-size:11px}
+.severity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.severity-critical .severity-dot{background:var(--red)}
+.severity-error .severity-dot{background:#f97316}
+.severity-warning .severity-dot{background:var(--yellow)}
+.severity-label{font-weight:600;min-width:55px}
+.severity-critical .severity-label{color:var(--red)}
+.severity-error .severity-label{color:#f97316}
+.severity-warning .severity-label{color:var(--yellow)}
+.error-time{color:var(--dim)}
+.error-source{background:var(--bg3);padding:1px 6px;border-radius:4px;font-size:10px;color:var(--dim)}
+.error-source.clickable{cursor:pointer;color:var(--accent)}
+.error-source.clickable:hover{text-decoration:underline}
+.dismiss-btn{margin-left:auto;background:none;border:none;color:var(--dim);cursor:pointer;font-size:14px;padding:0 4px;opacity:.5}
+.dismiss-btn:hover{opacity:1;color:var(--red)}
+.error-message{font-family:'Cascadia Code','Fira Code',monospace;font-size:11px;color:var(--dim);margin-top:5px;white-space:pre-wrap;word-break:break-all}
+.err-empty{text-align:center;color:var(--green);padding:40px;font-size:14px}
+</style>
+</head>
+<body>
+
+<!-- Sol Sekme Çubuğu -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <h2>VoiceCraft AI</h2>
+    <small>Admin Panel</small>
+  </div>
+  <button class="tab-btn active" data-tab="system"><span class="icon">📊</span>Sistem Durumu<span class="badge" id="badge-system"></span></button>
+  <button class="tab-btn" data-tab="projects"><span class="icon">📁</span>Proje Yönetimi<span class="badge" id="badge-projects"></span></button>
+  <button class="tab-btn" data-tab="detail" id="tab-detail" style="display:none"><span class="icon">📋</span><span id="tab-detail-name">Proje Detay</span></button>
+  <button class="tab-btn" data-tab="database"><span class="icon">🗄</span>Veritabanı<span class="badge" id="badge-database"></span></button>
+  <button class="tab-btn" data-tab="models"><span class="icon">🤖</span>Model Yönetimi<span class="badge" id="badge-models"></span></button>
+  <button class="tab-btn" data-tab="settings"><span class="icon">⚙</span>İşlem Ayarları<span class="badge" id="badge-settings"></span></button>
+  <button class="tab-btn" data-tab="errors"><span class="icon">⚠</span>Hata Geçmişi<span class="badge fail" id="badge-errors" style="display:none">0</span></button>
+  <button class="tab-btn" data-tab="logs"><span class="icon">📋</span>Sunucu Logları<span class="badge" id="badge-logs"></span></button>
+  <button class="tab-btn" data-tab="reports"><span class="icon">📄</span>Raporlar<span class="badge" id="badge-reports"></span></button>
+  <button class="tab-btn" data-tab="tts"><span class="icon">🗣</span>TTS Test<span class="badge" id="badge-tts"></span></button>
+  <button class="tab-btn" data-tab="backup"><span class="icon">💾</span>Yedekleme<span class="badge" id="badge-backup"></span></button>
+  <div class="sidebar-footer">
+    <a href="/" style="color:var(--accent);text-decoration:none">← Ana Sayfaya Dön</a>
+  </div>
+</nav>
+
+<!-- İçerik Alanı -->
+<main class="content">
+
+  <!-- BÖLÜM 1: Sistem Durumu -->
+  <section id="s-system" class="panel active">
+    <div class="panel-header">
+      <h3>📊 Sistem Durumu</h3>
+      <div><span class="meta" id="system-time"></span> <button class="btn btn-sm" onclick="runTests_system()">● Yenile</button></div>
+    </div>
+    <div class="metrics" id="system-metrics"></div>
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--dim);margin-bottom:4px">Disk Kullanımı</div>
+      <div style="background:var(--bg3);border-radius:4px;height:14px;overflow:hidden"><div id="disk-bar" style="height:100%;background:var(--accent);border-radius:4px;transition:width .5s"></div></div>
+      <div style="font-size:10px;color:var(--dim);margin-top:2px" id="disk-info"></div>
+    </div>
+    <h4 style="font-size:13px;margin-bottom:8px;color:var(--dim)">Sağlık Testleri</h4>
+    <div class="test-list" id="system-tests"></div>
+  </section>
+
+  <!-- BÖLÜM 2: Proje Yönetimi -->
+  <section id="s-projects" class="panel">
+    <div class="panel-header">
+      <h3>📁 Proje Yönetimi</h3>
+      <div><span class="meta" id="projects-time"></span> <button class="btn btn-sm" onclick="runTests_projects()">● Yenile</button></div>
+    </div>
+    <div class="proj-summary" id="projects-summary"></div>
+    <div class="proj-toolbar">
+      <select id="proj-sort" onchange="renderProjectCards()">
+        <option value="newest">En yeni</option><option value="oldest">En eski</option>
+        <option value="biggest">En büyük</option><option value="progress">Tamamlanma %</option>
+      </select>
+      <select id="proj-filter" onchange="renderProjectCards()">
+        <option value="all">Tümü</option><option value="done">Tamamlananlar</option>
+        <option value="active">Devam edenler</option>
+      </select>
+      <input type="text" id="proj-search" placeholder="Proje ara..." oninput="renderProjectCards()">
+    </div>
+    <div id="projects-cards"></div>
+    <h4 style="font-size:13px;margin:12px 0 8px;color:var(--dim)">Sağlık Testleri</h4>
+    <div class="test-list" id="projects-tests"></div>
+  </section>
+
+  <!-- Proje Detay Sayfası -->
+  <section id="s-detail" class="panel">
+    <div class="pd-header">
+      <div>
+        <button class="pd-back" onclick="goBackToProjects()">← Geri</button>
+        <div class="pd-title" id="pd-title">—</div>
+        <div class="pd-meta" id="pd-meta">—</div>
+      </div>
+    </div>
+    <div class="pd-cards" id="pd-summary-cards"></div>
+    <h4 style="font-size:13px;margin:12px 0 8px;color:var(--dim)">Pipeline Zaman Çizelgesi</h4>
+    <div id="pd-steps"></div>
+    <div id="pd-speakers" style="margin-top:16px"></div>
+    <div id="pd-transcript" style="margin-top:16px"></div>
+    <div id="pd-errors" style="margin-top:16px"></div>
+  </section>
+
+  <!-- BÖLÜM 3: Veritabanı Yönetimi -->
+  <section id="s-database" class="panel">
+    <div class="panel-header">
+      <h3>🗄 Veritabanı Yönetimi</h3>
+      <div><span class="meta" id="database-time"></span> <button class="btn btn-sm" onclick="runTests_database()">● Yenile</button></div>
+    </div>
+    <table class="tbl"><thead><tr><th>Store</th><th>Kayıt Sayısı</th><th>Tahmini Boyut</th><th>İşlem</th></tr></thead><tbody id="db-tbody"></tbody></table>
+    <div style="display:flex;gap:8px;margin:12px 0">
+      <button class="btn" onclick="doReset()">Aktif Projeyi Sıfırla</button>
+      <button class="btn btn-danger" onclick="doResetAll()">Tüm Verileri Sil</button>
+      <button class="btn" onclick="doCleanOld()">Eski Verileri Temizle (7+ gün)</button>
+    </div>
+    <h4 style="font-size:13px;margin:12px 0 8px;color:var(--dim)">Sağlık Testleri</h4>
+    <div class="test-list" id="database-tests"></div>
+  </section>
+
+  <!-- BÖLÜM 4: Model Yönetimi -->
+  <section id="s-models" class="panel">
+    <div class="panel-header">
+      <h3>🤖 Model Yönetimi</h3>
+      <div><span class="meta" id="models-time"></span> <button class="btn btn-sm" onclick="runTests_models()">● Yenile</button></div>
+    </div>
+    <div style="margin-bottom:12px;font-size:12px;color:var(--dim)" id="models-summary"></div>
+    <table class="tbl"><thead><tr><th>Model</th><th>Tip</th><th>VRAM</th><th>Durum</th></tr></thead><tbody id="models-tbody"></tbody></table>
+    <h4 style="font-size:13px;margin:12px 0 8px;color:var(--dim)">Sağlık Testleri</h4>
+    <div class="test-list" id="models-tests"></div>
+  </section>
+
+  <!-- BÖLÜM 5: İşlem Ayarları -->
+  <section id="s-settings" class="panel">
+    <div class="panel-header">
+      <h3>⚙ İşlem Ayarları</h3>
+      <div><span class="meta" id="settings-time"></span> <button class="btn btn-sm" onclick="runTests_settings()">● Yenile</button></div>
+    </div>
+    <h4 style="font-size:13px;margin-bottom:8px">HuggingFace Token</h4>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input type="text" id="hf-token-input" placeholder="hf_..." style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:6px 10px;font-size:12px;outline:none">
+      <button class="btn" onclick="saveHfToken()">Kaydet</button>
+    </div>
+    <h4 style="font-size:13px;margin-bottom:8px">Varsayılan Pipeline Adımları</h4>
+    <div id="default-steps" style="margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:2px"></div>
+    <h4 style="font-size:13px;margin-bottom:8px">Ses Analizi Parametreleri</h4>
+    <div id="audio-params" style="margin-bottom:16px"></div>
+    <h4 style="font-size:13px;margin-bottom:8px">GPU Clock Limiti</h4>
+    <div style="margin-bottom:16px" id="gpu-clock-area"></div>
+    <h4 style="font-size:13px;margin:12px 0 8px;color:var(--dim)">Sağlık Testleri</h4>
+    <div class="test-list" id="settings-tests"></div>
+  </section>
+
+  <!-- Hata Geçmişi -->
+  <section id="s-errors" class="panel">
+    <div class="panel-header">
+      <h3>⚠ Hata Geçmişi</h3>
+      <div><span class="meta" id="errors-time"></span> <button class="btn btn-sm" onclick="runTests_errors()">● Yenile</button></div>
+    </div>
+    <div class="err-summary" id="err-summary"></div>
+    <div class="err-toolbar" id="err-toolbar">
+      <button class="filter-btn active" data-sev="all" onclick="setErrFilter(this,'sev')">Tümü</button>
+      <button class="filter-btn" data-sev="critical" onclick="setErrFilter(this,'sev')">Kritik</button>
+      <button class="filter-btn" data-sev="error" onclick="setErrFilter(this,'sev')">Hata</button>
+      <button class="filter-btn" data-sev="warning" onclick="setErrFilter(this,'sev')">Uyarı</button>
+      <select id="err-source-filter" onchange="renderErrors()" style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:11px">
+        <option value="all">Kaynak: Tümü</option><option value="pipeline">Pipeline</option><option value="server-log">Sunucu Logu</option>
+      </select>
+      <select id="err-project-filter" onchange="renderErrors()" style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:11px">
+        <option value="all">Proje: Tümü</option>
+      </select>
+    </div>
+    <div id="err-list"></div>
+  </section>
+
+  <!-- BÖLÜM 6: Sunucu Logları -->
+  <section id="s-logs" class="panel">
+    <div class="panel-header">
+      <h3>📋 Sunucu Logları</h3>
+      <div><span class="meta" id="logs-time"></span> <button class="btn btn-sm" onclick="runTests_logs()">● Yenile</button></div>
+    </div>
+    <div class="toolbar">
+      <button class="btn btn-sm" onclick="fetchLogs(100)">Son 100</button>
+      <button class="btn btn-sm" onclick="fetchLogs(500)">Son 500</button>
+      <button class="btn btn-sm" onclick="fetchLogs(9999)">Tümü</button>
+      <button class="btn btn-sm" onclick="filterLogs('ERROR')">Hatalar</button>
+      <button class="btn btn-sm" onclick="filterLogs('WARNING')">Uyarılar</button>
+      <button class="btn btn-sm" onclick="filterLogs('')">Filtre Kaldır</button>
+      <input type="text" id="log-search" placeholder="Ara..." oninput="filterLogs(this.value)">
+      <button class="btn btn-sm" onclick="downloadLogs()">İndir .txt</button>
+      <label style="font-size:11px;color:var(--dim);display:flex;align-items:center;gap:4px;margin-left:auto"><input type="checkbox" id="log-live" onchange="toggleLiveLogs()"> Canlı İzle</label>
+    </div>
+    <div class="log-area" id="log-content">Yükleniyor...</div>
+    <h4 style="font-size:13px;margin:12px 0 8px;color:var(--dim)">Sağlık Testleri</h4>
+    <div class="test-list" id="logs-tests"></div>
+  </section>
+
+  <!-- BÖLÜM 7: Raporlar -->
+  <section id="s-reports" class="panel">
+    <div class="panel-header">
+      <h3>📄 Raporlar</h3>
+      <div><span class="meta" id="reports-time"></span> <button class="btn btn-sm" onclick="runTests_reports()">● Yenile</button></div>
+    </div>
+    <div class="metrics" id="report-stats"></div>
+    <table class="tbl"><thead><tr><th><input type="checkbox" id="rpt-all"></th><th>Proje Adı</th><th>Tarih</th><th>Adım</th><th>İşlem</th></tr></thead><tbody id="reports-tbody"></tbody></table>
+    <div style="display:flex;gap:8px;margin:8px 0">
+      <button class="btn" onclick="exportCSV()">CSV Dışa Aktar</button>
+    </div>
+    <h4 style="font-size:13px;margin:12px 0 8px;color:var(--dim)">Sağlık Testleri</h4>
+    <div class="test-list" id="reports-tests"></div>
+  </section>
+
+  <!-- BÖLÜM: TTS Test -->
+  <section id="s-tts" class="panel">
+    <div class="panel-header">
+      <h3>🗣 TTS — Metinden Sese</h3>
+      <div><span class="meta" id="tts-time"></span> <button class="btn btn-sm" onclick="runTests_tts()">● Test</button></div>
+    </div>
+    <div class="metrics" id="tts-metrics"></div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+      <!-- Metin -->
+      <div>
+        <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px">Metin</label>
+        <textarea id="tts-text" rows="4" placeholder="Seslendirilecek metni yazın..." style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit"></textarea>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+        <!-- Dil -->
+        <div>
+          <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px">Dil</label>
+          <select id="tts-lang" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:5px 8px;font-size:12px">
+            <option value="tr" selected>Türkçe</option>
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+            <option value="it">Italiano</option>
+            <option value="pt">Português</option>
+            <option value="ru">Русский</option>
+            <option value="ar">العربية</option>
+            <option value="ja">日本語</option>
+            <option value="zh-cn">中文</option>
+          </select>
+        </div>
+
+        <!-- Referans Ses (Voice Cloning) -->
+        <div>
+          <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px">Referans Ses <span style="color:var(--dim)">(opsiyonel — ses klonlama)</span></label>
+          <input type="file" id="tts-ref" accept="audio/*" style="font-size:11px;color:var(--dim)">
+        </div>
+
+        <!-- Seslendır Butonu -->
+        <button id="tts-btn" class="btn" onclick="ttsGenerate()" style="background:var(--accent);color:#fff;padding:7px 20px;font-weight:600;white-space:nowrap">
+          🗣 Seslendir
+        </button>
+      </div>
+
+      <!-- Durum -->
+      <div id="tts-status" style="font-size:12px;color:var(--dim)"></div>
+
+      <!-- Sonuç -->
+      <div id="tts-result" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px">
+        <div style="font-size:11px;color:var(--green);margin-bottom:8px;font-weight:600">✓ Seslendirme tamamlandı</div>
+        <audio id="tts-audio" controls style="width:100%;margin-bottom:8px"></audio>
+        <button class="btn btn-sm" onclick="ttsDownload()" style="color:var(--green)">⬇ İndir</button>
+      </div>
+    </div>
+
+    <h4 style="font-size:13px;margin:16px 0 8px;color:var(--dim)">Sağlık Testleri</h4>
+    <div class="test-list" id="tts-tests"></div>
+  </section>
+
+  <!-- BÖLÜM: Yedekleme -->
+  <section id="s-backup" class="panel">
+    <div class="panel-header">
+      <h3>💾 Yedekleme</h3>
+      <div><span class="meta" id="backup-time"></span></div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="val" id="backup-file-count">—</div>
+        <div class="lbl">Proje Dosyası</div>
+        <div class="sub">public/ + src/</div>
+      </div>
+      <div class="metric-card">
+        <div class="val" id="backup-db-stores">7</div>
+        <div class="lbl">DB Store</div>
+        <div class="sub">IndexedDB</div>
+      </div>
+      <div class="metric-card">
+        <div class="val" id="backup-last">—</div>
+        <div class="lbl">Son Yedek</div>
+        <div class="sub" id="backup-last-size"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+      <button class="btn" id="btn-backup-all" onclick="backupAll()" style="padding:10px 24px;font-size:14px;font-weight:700;background:rgba(34,197,94,.15);border-color:var(--green);color:var(--green)">
+        💾 Tam Yedek Al (Dosyalar + DB)
+      </button>
+      <button class="btn" onclick="backupDBOnly()" style="padding:10px 20px;font-size:13px;background:rgba(59,130,246,.1);border-color:var(--accent);color:var(--accent)">
+        🗄 Sadece DB Yedekle
+      </button>
+      <button class="btn" onclick="backupFilesOnly()" style="padding:10px 20px;font-size:13px;background:rgba(168,85,247,.1);border-color:var(--purple);color:var(--purple)">
+        📂 Sadece Dosyalar Yedekle
+      </button>
+    </div>
+
+    <div id="backup-progress" style="display:none;margin-bottom:16px;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span id="backup-spinner" style="display:inline-block;animation:spin 1s linear infinite">⏳</span>
+        <span id="backup-status-text" style="font-size:12px">Yedekleniyor...</span>
+      </div>
+      <div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+        <div id="backup-progress-bar" style="height:100%;width:0%;background:var(--green);border-radius:3px;transition:width 0.3s"></div>
+      </div>
+    </div>
+
+    <div id="backup-log" class="log-area" style="min-height:120px"></div>
+
+    <h4 style="font-size:13px;margin:16px 0 8px;color:var(--dim)">Yedek Geçmişi</h4>
+    <div id="backup-history"></div>
+  </section>
+
+  <!-- Alt Özet Şeridi -->
+  <div class="summary-bar">
+    <span>Toplam: 9 bölüm</span>
+    <span><span class="dot pass"></span> Geçti: <b id="sum-pass">0</b></span>
+    <span><span class="dot warn"></span> Uyarı: <b id="sum-warn">0</b></span>
+    <span><span class="dot fail"></span> Hata: <b id="sum-fail">0</b></span>
+    <span style="color:var(--dim)">Son: <span id="sum-time">—</span></span>
+    <button class="btn btn-sm" style="margin-left:auto" onclick="runAllTests()">Tümünü Yeniden Çalıştır</button>
+  </div>
+</main>
+
+<script>
+// ── Sabitler ────────────────────────────────────────────────────────────────
+const BASE = 'http://localhost:3000';
+const DB_NAME = 'voicecraft';
+const DB_VERSION = 9;
+const STORES = ['session','step_audio','pipeline','vad','diarize','transcripts','projects'];
+
+const MODELS = [
+  { name:'Whisper Large-v3',      type:'whisper',    vram_mb:2800, endpoint:'/api/transcribe/start' },
+  { name:'Demucs htdemucs',       type:'demucs',     vram_mb:1200, endpoint:'/api/demucs' },
+  { name:'Silero VAD v4',         type:'vad',        vram_mb:80,   endpoint:'/api/vad' },
+  { name:'pyannote 3.1',          type:'diarize',    vram_mb:800,  endpoint:'/api/diarize/start' },
+  { name:'VoiceFixer',            type:'voicefixer', vram_mb:900,  endpoint:'/api/voicefixer' },
+  { name:'Resemble Enhance',      type:'resemble',   vram_mb:1100, endpoint:'/api/resemble-enhance' },
+  { name:'DeepFilterNet v0.5.6',  type:'deepfilter', vram_mb:0,    endpoint:'/api/deepfilter' },
+  { name:'Facebook DNS64',        type:'dns64',      vram_mb:600,  endpoint:'/api/denoise' },
+  { name:'mistral-nemo:12b',      type:'ollama',     vram_mb:7000, endpoint:'/api/transcript/clean' }
+];
+
+const STEP_NAMES = [
+  {id:'1',  num:'1',   label:'Whisper (Transkript)', def:true},
+  {id:'1b', num:'1b',  label:'Metin Temizleme (Ollama)', def:true},
+  {id:'2',  num:'2',   label:'Demucs (Vokal İzolasyon)', def:true},
+  {id:'3',  num:'3',   label:'NoiseReduce (Frekans Gürültü)', def:true},
+  {id:'4',  num:'4',   label:'DNS64 (Anlık Gürültü)', def:true},
+  {id:'5',  num:'5',   label:'SpeechOnly (VAD + Band-pass)', def:true},
+  {id:'6',  num:'6',   label:'Diarize (Konuşmacı Tespiti)', def:true},
+  {id:'7',  num:'7',   label:'VAD (Sessizlik Haritası)', def:true},
+  {id:'8b', num:'8',   label:'Ses Seviyeleri Dengeleme (Normalize)', def:true},
+  {id:'8',  num:'9',   label:'Kesim', def:true},
+  {id:'9a', num:'10a', label:'VoiceFixer (opsiyonel)', def:false},
+  {id:'9b', num:'10b', label:'Resemble Enhance (opsiyonel)', def:false},
+  {id:'9c', num:'10c', label:'DeepFilterNet (opsiyonel)', def:false}
+];
+
+// ── Global test sonuçları ───────────────────────────────────────────────────
+const _allResults = {};
+let _logData = [];
+let _logFilter = '';
+let _liveTimer = null;
+
+// ── Yardımcı Fonksiyonlar ───────────────────────────────────────────────────
+async function fetchWithTimeout(url, options = {}, ms = 5000) {
+  const ctrl = new AbortController();
+  const id = setTimeout(() => ctrl.abort(), ms);
+  try { return await fetch(url, { ...options, signal: ctrl.signal }); }
+  finally { clearTimeout(id); }
+}
+
+async function testEndpoint(path, method = 'GET') {
+  try {
+    const res = await fetchWithTimeout(BASE + path, { method }, 5000);
+    return { name: method + ' ' + path, status: (res.ok || res.status < 500) ? 'pass' : 'fail', detail: 'HTTP ' + res.status };
+  } catch (e) {
+    return { name: method + ' ' + path, status: 'fail', detail: e.message };
+  }
+}
+
+function testRange(value, warnAbove, name) {
+  if (value == null || isNaN(value)) return { name, status: 'fail', detail: 'Veri yok' };
+  if (value > warnAbove) return { name, status: 'warn', detail: value.toFixed(1) + ' > ' + warnAbove };
+  return { name, status: 'pass', detail: value.toFixed(1) };
+}
+
+function renderTestCard(r) {
+  const icon = { pass:'✓', warn:'⚠', fail:'✗' }[r.status];
+  return '<div class="test-card ' + r.status + '"><span class="icon">' + icon + '</span><span class="name">' + r.name + '</span><span class="detail">' + r.detail + '</span></div>';
+}
+
+function renderTests(containerId, results) {
+  document.getElementById(containerId).innerHTML = results.map(renderTestCard).join('');
+}
+
+function updateBadge(section, results) {
+  _allResults[section] = results;
+  const badge = document.getElementById('badge-' + section);
+  const fails = results.filter(r => r.status === 'fail').length;
+  const warns = results.filter(r => r.status === 'warn').length;
+  if (fails) { badge.textContent = fails; badge.className = 'badge fail'; }
+  else if (warns) { badge.textContent = warns; badge.className = 'badge warn'; }
+  else { badge.textContent = '✓'; badge.className = 'badge pass'; }
+  updateSummary();
+}
+
+function updateSummary() {
+  let pass = 0, warn = 0, fail = 0;
+  Object.values(_allResults).forEach(arr => arr.forEach(r => { if (r.status === 'pass') pass++; else if (r.status === 'warn') warn++; else fail++; }));
+  document.getElementById('sum-pass').textContent = pass;
+  document.getElementById('sum-warn').textContent = warn;
+  document.getElementById('sum-fail').textContent = fail;
+  document.getElementById('sum-time').textContent = new Date().toLocaleTimeString('tr-TR');
+}
+
+function setTime(id) { document.getElementById(id).textContent = 'Son: ' + new Date().toLocaleTimeString('tr-TR'); }
+
+function progressRingSvg(pct, color) {
+  const r = 34, c = 2 * Math.PI * r, off = c - (pct / 100) * c;
+  return '<svg class="progress-ring" viewBox="0 0 80 80"><circle class="bg" cx="40" cy="40" r="' + r + '"/><circle class="fg" cx="40" cy="40" r="' + r + '" stroke="' + color + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" transform="rotate(-90 40 40)"/></svg>';
+}
+
+function pctColor(v) { return v > 90 ? 'var(--red)' : v > 70 ? 'var(--yellow)' : 'var(--green)'; }
+
+// ── IndexedDB Yardımcıları ──────────────────────────────────────────────────
+function openIDB() {
+  return new Promise(function(res, rej) {
+    var req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      STORES.forEach(function(s) { if (!db.objectStoreNames.contains(s)) db.createObjectStore(s); });
+    };
+    req.onsuccess = function(e) { res(e.target.result); };
+    req.onerror = function(e) { rej(e.target.error); };
+  });
+}
+
+function idbCount(db, store) {
+  return new Promise(function(res) {
+    try {
+      var tx = db.transaction(store, 'readonly');
+      var req = tx.objectStore(store).count();
+      req.onsuccess = function() { res(req.result); };
+      req.onerror = function() { res(-1); };
+    } catch(e) { res(-1); }
+  });
+}
+
+function idbGetAll(db, store) {
+  return new Promise(function(res) {
+    try {
+      var tx = db.transaction(store, 'readonly');
+      var req = tx.objectStore(store).getAll();
+      req.onsuccess = function() { res(req.result || []); };
+      req.onerror = function() { res([]); };
+    } catch(e) { res([]); }
+  });
+}
+
+function idbClear(db, store) {
+  return new Promise(function(res, rej) {
+    try {
+      var tx = db.transaction(store, 'readwrite');
+      tx.objectStore(store).clear();
+      tx.oncomplete = function() { res(true); };
+      tx.onerror = function() { rej(); };
+    } catch(e) { rej(e); }
+  });
+}
+
+// ── Sekme Yönetimi ──────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+    btn.classList.add('active');
+    var tab = btn.dataset.tab;
+    document.getElementById('s-' + tab).classList.add('active');
+    // Otomatik test çalıştır
+    var fn = window['runTests_' + tab];
+    if (fn) fn();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BÖLÜM 1: Sistem Durumu
+// ══════════════════════════════════════════════════════════════════════════════
+let _sysTimer = null;
+async function runTests_system() {
+  setTime('system-time');
+  const results = [];
+  try {
+    const res = await fetchWithTimeout(BASE + '/api/system-stats');
+    if (!res.ok) { results.push({ name: 'GET /api/system-stats', status: 'fail', detail: 'HTTP ' + res.status }); }
+    else {
+      const d = await res.json();
+      results.push({ name: 'API erişimi', status: 'pass', detail: 'HTTP 200' });
+      results.push(d.gpu_name ? { name: 'GPU algılandı', status: 'pass', detail: d.gpu_name } : { name: 'GPU algılandı', status: 'fail', detail: 'gpu_name yok' });
+      // Eski ve yeni alan adlarını destekle
+      d.cpu_percent = d.cpu_percent || d.cpu_pct || 0;
+      d.ram_percent = d.ram_percent || d.ram_pct || 0;
+      d.gpu_percent = d.gpu_percent || d.gpu_pct || 0;
+      d.vram_used_mb = d.vram_used_mb || d.gpu_mem_used_mb || 0;
+      d.vram_total_mb = d.vram_total_mb || d.gpu_mem_total_mb || 0;
+      d.disk_used_gb = d.disk_used_gb || 0;
+      d.disk_total_gb = d.disk_total_gb || 0;
+      d.gpu_name = d.gpu_name || null;
+      d.gpu_clock_mhz = d.gpu_clock_mhz || null;
+      results.push(testRange(d.cpu_percent, 95, 'CPU kullanımı'));
+      var vramPct = d.vram_total_mb > 0 ? (d.vram_used_mb / d.vram_total_mb * 100) : 0;
+      results.push(testRange(vramPct, 90, 'VRAM doluluk'));
+      var allValid = ['cpu_percent','ram_percent','gpu_percent'].every(function(k) { return d[k] != null && !isNaN(d[k]); });
+      results.push({ name: 'Sayısal alanlar geçerli', status: allValid ? 'pass' : 'fail', detail: allValid ? 'OK' : 'NaN var' });
+
+      // UI güncelle
+      var cpuC = pctColor(d.cpu_percent), ramC = pctColor(d.ram_percent), gpuC = pctColor(d.gpu_percent), vramC = pctColor(vramPct);
+      document.getElementById('system-metrics').innerHTML =
+        '<div class="metric-card">' + progressRingSvg(d.cpu_percent || 0, cpuC) + '<div class="val" style="color:' + cpuC + '">' + (d.cpu_percent||0).toFixed(1) + '%</div><div class="lbl">CPU</div></div>' +
+        '<div class="metric-card">' + progressRingSvg(d.ram_percent || 0, ramC) + '<div class="val" style="color:' + ramC + '">' + (d.ram_percent||0).toFixed(1) + '%</div><div class="lbl">RAM</div><div class="sub">' + (d.ram_used_gb||0).toFixed(1) + ' / ' + (d.ram_total_gb||0).toFixed(1) + ' GB</div></div>' +
+        '<div class="metric-card">' + progressRingSvg(d.gpu_percent || 0, gpuC) + '<div class="val" style="color:' + gpuC + '">' + (d.gpu_percent||0).toFixed(1) + '%</div><div class="lbl">GPU</div><div class="sub">' + (d.gpu_clock_mhz||'?') + ' MHz' + (d.gpu_temp != null ? ' · ' + d.gpu_temp + '°C' : '') + '</div></div>' +
+        '<div class="metric-card">' + progressRingSvg(vramPct, vramC) + '<div class="val" style="color:' + vramC + '">' + vramPct.toFixed(1) + '%</div><div class="lbl">VRAM</div><div class="sub">' + ((d.vram_used_mb||0)/1024).toFixed(1) + ' / ' + ((d.vram_total_mb||0)/1024).toFixed(1) + ' GB</div></div>';
+      var diskPct = d.disk_total_gb > 0 ? (d.disk_used_gb / d.disk_total_gb * 100) : 0;
+      document.getElementById('disk-bar').style.width = diskPct.toFixed(1) + '%';
+      document.getElementById('disk-info').textContent = (d.disk_used_gb||0).toFixed(1) + ' / ' + (d.disk_total_gb||0).toFixed(1) + ' GB (' + diskPct.toFixed(1) + '%)';
+    }
+  } catch(e) {
+    results.push({ name: 'API erişimi', status: 'fail', detail: e.message });
+  }
+  renderTests('system-tests', results);
+  updateBadge('system', results);
+  // Otomatik yenileme
+  if (_sysTimer) clearInterval(_sysTimer);
+  _sysTimer = setInterval(runTests_system, 5000);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BÖLÜM 2: Proje Yönetimi
+// ══════════════════════════════════════════════════════════════════════════════
+// Proje verileri — bellekte tut (sıralama/filtreleme için)
+let _projData = [];
+
+// Yardımcı: tarih formatla
+function formatDate(ts) {
+  if (!ts) return '—';
+  var d = new Date(ts), now = new Date(), diff = now - d;
+  if (diff < 86400000) return 'Bugün ' + d.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+  if (diff < 172800000) return 'Dün ' + d.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+  return d.toLocaleDateString('tr-TR', { day:'numeric', month:'short', year:'numeric' });
+}
+function formatSize(bytes) {
+  if (!bytes) return '—';
+  if (bytes > 1073741824) return (bytes/1073741824).toFixed(1)+' GB';
+  if (bytes > 1048576) return (bytes/1048576).toFixed(1)+' MB';
+  return (bytes/1024).toFixed(0)+' KB';
+}
+function formatDuration(seconds) {
+  if (!seconds) return '—';
+  var h = Math.floor(seconds/3600), m = Math.floor((seconds%3600)/60);
+  if (h > 0) return h+' sa '+m+' dk';
+  return m+' dk';
+}
+function formatStepDur(sn) {
+  if (!sn) return '—';
+  var m = Math.floor(sn/60), s = Math.floor(sn%60);
+  return m+' dk '+s+' sn';
+}
+
+const STEP_LABELS = {
+  '1':'Whisper','1b':'Temizleme','2':'Demucs','3':'NoiseReduce','4':'DNS64',
+  '5':'SpeechOnly','6':'Diarize','7':'VAD','8b':'Dengeleme','8':'Kesim',
+  '9a':'VoiceFixer','9b':'Resemble','9c':'DeepFilter'
+};
+const ALL_STEPS = ['1','1b','2','3','4','5','6','7','8b','8','9a','9b','9c'];
+const MAIN_STEPS = 10; // 9a/9b/9c opsiyonel sayılmaz
+
+async function runTests_projects() {
+  setTime('projects-time');
+  const results = [];
+  try {
+    var db = await openIDB();
+    results.push({ name:'IndexedDB açıldı', status:'pass', detail:'OK' });
+    results.push(db.objectStoreNames.contains('projects') ? { name:'projects store', status:'pass', detail:'Mevcut' } : { name:'projects store', status:'fail', detail:'Yok' });
+    results.push(db.objectStoreNames.contains('pipeline') ? { name:'pipeline store', status:'pass', detail:'Mevcut' } : { name:'pipeline store', status:'fail', detail:'Yok' });
+
+    var projects = [];
+    try { projects = JSON.parse(localStorage.getItem('ses_projeler') || '[]'); } catch(e) {}
+    results.push({ name:'Proje sayısı', status:'pass', detail:projects.length+' proje' });
+
+    var pipelines = await idbGetAll(db, 'pipeline');
+    var stepAudios = await idbGetAll(db, 'step_audio');
+
+    var totalBytes = 0;
+    _projData = projects.map(function(p) {
+      var pipe = pipelines.find(function(pp) { return pp && pp.projectName === p.name; }) || {};
+      var doneSteps = (pipe.doneSteps || []).map(String);
+      var stepDetails = pipe.stepDetails || {};
+      var spkCount = pipe.speakerCount || null;
+      var totalDur = pipe.totalDuration || null;
+      var projAudios = stepAudios.filter(function(s) { return s.project === p.name; });
+      var audioBytes = projAudios.reduce(function(a,s) { return a+((s.audio?s.audio.byteLength:0)); }, 0);
+      totalBytes += (p.fileSize || 0);
+      var pct = Math.round((doneSteps.length / MAIN_STEPS) * 100);
+      if (pct > 100) pct = 100;
+      return {
+        id: p.id, name: p.name || '(isimsiz)', fileName: p.fileName || '',
+        fileSize: p.fileSize || 0, createdAt: p.createdAt || p.updatedAt || 0,
+        doneSteps: doneSteps, stepDetails: stepDetails,
+        spkCount: spkCount, totalDur: totalDur, pct: pct, audioBytes: audioBytes
+      };
+    });
+
+    if (_projData.some(function(p) { return p.audioBytes > 524288000; }))
+      results.push({ name:'Proje > 500MB', status:'warn', detail:'Büyük proje var' });
+
+    db.close();
+    renderProjectCards();
+  } catch(e) {
+    results.push({ name:'IndexedDB', status:'fail', detail:e.message });
+  }
+  renderTests('projects-tests', results);
+  updateBadge('projects', results);
+}
+
+function renderProjectCards() {
+  var data = _projData.slice();
+  // Filtreleme
+  var filter = document.getElementById('proj-filter').value;
+  if (filter === 'done') data = data.filter(function(p) { return p.pct >= 100; });
+  else if (filter === 'active') data = data.filter(function(p) { return p.pct > 0 && p.pct < 100; });
+  // Arama
+  var search = (document.getElementById('proj-search').value || '').toLowerCase();
+  if (search) data = data.filter(function(p) { return p.name.toLowerCase().includes(search); });
+  // Sıralama
+  var sort = document.getElementById('proj-sort').value;
+  if (sort === 'newest') data.sort(function(a,b) { return (b.createdAt||0)-(a.createdAt||0); });
+  else if (sort === 'oldest') data.sort(function(a,b) { return (a.createdAt||0)-(b.createdAt||0); });
+  else if (sort === 'biggest') data.sort(function(a,b) { return (b.fileSize||0)-(a.fileSize||0); });
+  else if (sort === 'progress') data.sort(function(a,b) { return b.pct-a.pct; });
+
+  // Özet
+  var totalDone = _projData.filter(function(p) { return p.pct>=100; }).length;
+  var totalActive = _projData.filter(function(p) { return p.pct>0&&p.pct<100; }).length;
+  var totalSize = _projData.reduce(function(a,p) { return a+p.fileSize; }, 0);
+  document.getElementById('projects-summary').innerHTML =
+    'Toplam: <b>'+_projData.length+'</b> proje | Tamamlanan: <b>'+totalDone+'</b> | Devam eden: <b>'+totalActive+'</b> | Toplam boyut: <b>'+formatSize(totalSize)+'</b>';
+
+  // Kartlar
+  var html = '';
+  if (!data.length) {
+    html = '<div style="text-align:center;color:var(--dim);padding:30px">Kayıtlı proje yok</div>';
+  }
+  data.forEach(function(p) {
+    var barColor = p.pct >= 100 ? 'var(--green)' : p.pct > 50 ? 'var(--accent)' : 'var(--yellow)';
+    // Badge'ler
+    var badges = '';
+    ALL_STEPS.forEach(function(sid) {
+      var done = p.doneSteps.indexOf(sid) >= 0;
+      var cls = done ? 'done' : 'skipped';
+      var icon = done ? '✓' : '—';
+      badges += '<span class="step-badge '+cls+'">'+icon+' '+(STEP_LABELS[sid]||sid)+'</span>';
+    });
+    // Detay panel satırları
+    var detailRows = '';
+    ALL_STEPS.forEach(function(sid) {
+      var done = p.doneSteps.indexOf(sid) >= 0;
+      var icon = done ? '✓' : '—';
+      var iconColor = done ? 'var(--green)' : 'var(--dim)';
+      var det = p.stepDetails[sid] || {};
+      var dur = det.duration ? formatStepDur(det.duration) : '—';
+      var size = det.outputSize ? formatSize(det.outputSize) : '—';
+      detailRows += '<div class="detail-row"><span class="d-icon" style="color:'+iconColor+'">'+icon+'</span><span class="d-name">'+sid+'. '+(STEP_LABELS[sid]||sid)+'</span><span class="d-dur">'+dur+'</span><span class="d-size">'+size+'</span></div>';
+    });
+
+    html += '<div class="proj-card" id="pc-'+p.id+'">' +
+      '<div class="top"><div><div class="name">'+p.name+'</div>' +
+      '<div class="info">'+formatSize(p.fileSize)+' · '+(p.spkCount?p.spkCount+' konuşmacı':'—')+' · '+formatDuration(p.totalDur)+'</div></div>' +
+      '<div class="date">📅 '+formatDate(p.createdAt)+'</div></div>' +
+      '<div class="progress-wrap"><div class="progress-bar"><div class="fill" style="width:'+p.pct+'%;background:'+barColor+'"></div></div>' +
+      '<span class="progress-txt">%'+p.pct+' · '+p.doneSteps.length+'/'+MAIN_STEPS+' adım</span></div>' +
+      '<div class="badges">'+badges+'</div>' +
+      '<div class="actions"><button class="btn btn-sm" onclick="openProjectDetail(\''+p.name.replace(/'/g,"\\'")+'\')">Detay</button>' +
+      '<button class="btn btn-sm btn-danger" onclick="deleteProject(\''+p.id+'\')">Sil</button></div>' +
+      '<div class="detail-panel" id="dp-'+p.id+'"><div class="detail-inner">'+detailRows+'</div></div>' +
+      '</div>';
+  });
+  document.getElementById('projects-cards').innerHTML = html;
+}
+
+function toggleDetail(id) {
+  var el = document.getElementById('dp-'+id);
+  if (el) el.classList.toggle('open');
+}
+
+async function deleteProject(id) {
+  var projects = JSON.parse(localStorage.getItem('ses_projeler') || '[]');
+  var proj = projects.find(function(p) { return p.id === id; });
+  var projName = proj ? proj.name : '';
+  var fileName = proj ? proj.fileName : '';
+  if (!confirm('\"' + (projName || id) + '\" projesini ve TÜM verilerini (ses, transkript, pipeline, arşiv) silmek istediğinizden emin misiniz?\n\nBu işlem geri alınamaz!')) return;
+
+  // 1. localStorage'dan sil
+  localStorage.setItem('ses_projeler', JSON.stringify(projects.filter(function(p) { return p.id !== id; })));
+  // Aktif proje buysa temizle
+  if (localStorage.getItem('current_project_name') === projName) {
+    localStorage.removeItem('current_project_name');
+    localStorage.removeItem('ses_aktif_proje');
+  }
+
+  // 2. IndexedDB'den tüm ilişkili verileri sil
+  try {
+    var db = await openIDB();
+
+    // fileKey formatı: "dosyaAdı|boyut"
+    var fileKey = (proj && proj.fileName && proj.fileSize) ? (proj.fileName + '|' + proj.fileSize) : null;
+
+    // session store — fileKey ile eşleşen kayıt
+    if (fileKey) {
+      try { var tx1 = db.transaction('session','readwrite'); tx1.objectStore('session').delete(fileKey); await new Promise(function(r){tx1.oncomplete=r}); } catch(e){}
+    }
+
+    // transcripts store — fileKey ile eşleşen kayıt
+    if (fileKey) {
+      try { var tx2 = db.transaction('transcripts','readwrite'); tx2.objectStore('transcripts').delete(fileKey); await new Promise(function(r){tx2.oncomplete=r}); } catch(e){}
+    }
+
+    // vad store — fileKey ile eşleşen kayıt
+    if (fileKey) {
+      try { var tx3 = db.transaction('vad','readwrite'); tx3.objectStore('vad').delete(fileKey); await new Promise(function(r){tx3.oncomplete=r}); } catch(e){}
+    }
+
+    // diarize store — fileKey ile eşleşen kayıt
+    if (fileKey) {
+      try { var tx4 = db.transaction('diarize','readwrite'); tx4.objectStore('diarize').delete(fileKey); await new Promise(function(r){tx4.oncomplete=r}); } catch(e){}
+    }
+
+    // pipeline store — "proj__projeAdı" ve "current" (eğer bu projeyse)
+    if (projName) {
+      try { var tx5 = db.transaction('pipeline','readwrite'); tx5.objectStore('pipeline').delete('proj__' + projName); await new Promise(function(r){tx5.oncomplete=r}); } catch(e){}
+    }
+
+    // step_audio store — "projeAdı__step_X" formatında tüm key'ler
+    if (projName) {
+      try {
+        var tx6 = db.transaction('step_audio','readwrite');
+        var s6 = tx6.objectStore('step_audio');
+        var allKeys = await new Promise(function(r){ var req = s6.getAllKeys(); req.onsuccess = function(){ r(req.result || []); }; req.onerror = function(){ r([]); }; });
+        allKeys.forEach(function(k) {
+          if (String(k).startsWith(projName + '__')) s6.delete(k);
+        });
+        await new Promise(function(r){tx6.oncomplete=r});
+      } catch(e){}
+    }
+
+    // projects store (IndexedDB) — id ile eşleşen kayıt
+    try {
+      var tx7 = db.transaction('projects','readwrite');
+      var s7 = tx7.objectStore('projects');
+      var projKeys = await new Promise(function(r){ var req = s7.getAllKeys(); req.onsuccess = function(){ r(req.result || []); }; req.onerror = function(){ r([]); }; });
+      var projAll = await new Promise(function(r){ var req = s7.getAll(); req.onsuccess = function(){ r(req.result || []); }; req.onerror = function(){ r([]); }; });
+      projAll.forEach(function(p, i) {
+        if (p && (p.id === id || p.name === projName)) {
+          s7.delete(projKeys[i]);
+        }
+      });
+      await new Promise(function(r){tx7.oncomplete=r});
+    } catch(e){}
+
+    db.close();
+    console.log('[admin] Proje tamamen silindi:', projName, fileKey);
+  } catch(e) {
+    console.error('[admin] Proje silme hatası:', e);
+  }
+
+  runTests_projects();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Proje Detay Sayfası
+// ══════════════════════════════════════════════════════════════════════════════
+const DETAIL_STEPS = [
+  { key:'1',   label:'Whisper',          desc:'Konuşmayı yazıya çevirme' },
+  { key:'1b',  label:'Metin Temizleme',  desc:'Dolgu kelime temizliği' },
+  { key:'2',   label:'Demucs',           desc:'Vokal izolasyonu' },
+  { key:'3',   label:'NoiseReduce',      desc:'Frekans gürültüsü temizleme' },
+  { key:'4',   label:'DNS64',            desc:'Anlık gürültü silme' },
+  { key:'5',   label:'SpeechOnly',       desc:'Konuşma dışı ses temizleme' },
+  { key:'6',   label:'Diarize',          desc:'Konuşmacı tespiti' },
+  { key:'7',   label:'VAD',              desc:'Sessizlik haritası' },
+  { key:'8b',  label:'Dengeleme',        desc:'Ses seviyesi dengeleme' },
+  { key:'8',   label:'Kesim',            desc:'Sessiz bölgeleri kes' },
+  { key:'9a',  label:'VoiceFixer',       desc:'Ses restorasyonu (opsiyonel)' },
+  { key:'9b',  label:'Resemble Enhance', desc:'Gürültü temizleme (opsiyonel)' },
+  { key:'9c',  label:'DeepFilterNet',    desc:'Derin filtreleme (opsiyonel)' }
+];
+
+function calcSizeChange(prevSize, currSize) {
+  if (!prevSize || !currSize) return '—';
+  var diff = currSize - prevSize;
+  var pct = ((diff / prevSize) * 100).toFixed(1);
+  var diffStr = formatSize(Math.abs(diff));
+  if (diff < 0) return formatSize(prevSize) + ' → ' + formatSize(currSize) + '  (-' + Math.abs(pct) + '%  ↓ ' + diffStr + ' azaldı)';
+  if (diff > 0) return formatSize(prevSize) + ' → ' + formatSize(currSize) + '  (+' + pct + '%  ↑ ' + diffStr + ' arttı)';
+  return formatSize(currSize) + '  (değişmedi)';
+}
+
+function showPanel(panelId) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
+  var tabBtn = document.querySelector('[data-tab="' + panelId.replace('s-','') + '"]');
+  if (tabBtn) tabBtn.classList.add('active');
+  var panel = document.getElementById(panelId);
+  if (panel) panel.classList.add('active');
+}
+
+function goBackToProjects() {
+  document.getElementById('tab-detail').style.display = 'none';
+  showPanel('s-projects');
+  document.querySelector('[data-tab="projects"]').classList.add('active');
+}
+
+async function openProjectDetail(projectName) {
+  // Sekmeyi göster
+  var tabEl = document.getElementById('tab-detail');
+  tabEl.style.display = 'flex';
+  var shortName = projectName.length > 15 ? projectName.substring(0,15) + '...' : projectName;
+  document.getElementById('tab-detail-name').textContent = shortName;
+  showPanel('s-detail');
+  await loadProjectDetail(projectName);
+}
+
+async function loadProjectDetail(projectName) {
+  try {
+    var db = await openIDB();
+    // Proje bilgisi
+    var projects = JSON.parse(localStorage.getItem('ses_projeler') || '[]');
+    var proj = projects.find(function(p) { return p.name === projectName; }) || {};
+    // Pipeline
+    var pipelines = await idbGetAll(db, 'pipeline');
+    var pipe = pipelines.find(function(p) { return p && p.projectName === projectName; }) || {};
+    var doneSteps = (pipe.doneSteps || []).map(String);
+    var stepDetails = pipe.stepDetails || {};
+    var cutSegs = pipe.cutSegments || [];
+    // Diarize
+    var diarizeAll = await idbGetAll(db, 'diarize');
+    var diarData = diarizeAll.find(function(d) { return d && d.segments && d.segments.length; }) || {};
+    var diarSegs = diarData.segments || [];
+    // Transkript
+    var trAll = await idbGetAll(db, 'transcripts');
+    var trData = trAll.find(function(t) { return t && t.segments && t.segments.length; }) || {};
+    var trSegs = trData.segments || [];
+    db.close();
+
+    // Başlık
+    document.getElementById('pd-title').textContent = proj.fileName || projectName;
+    var metaParts = [formatSize(proj.fileSize)];
+    if (pipe.speakerCount) metaParts.push(pipe.speakerCount + ' konuşmacı');
+    metaParts.push(formatDuration(pipe.totalDuration));
+    metaParts.push(formatDate(proj.createdAt || proj.updatedAt));
+    document.getElementById('pd-meta').textContent = metaParts.join(' · ');
+
+    // Özet kartları
+    var totalCutSec = cutSegs.reduce(function(a,c) { return a + ((c.end||0) - (c.start||0)); }, 0);
+    var origSize = proj.fileSize || 0;
+    var lastStep = doneSteps[doneSteps.length-1];
+    var lastDet = stepDetails[lastStep] || {};
+    var finalSize = lastDet.outputSize || origSize;
+    var sizePct = origSize > 0 ? (((origSize - finalSize) / origSize) * 100).toFixed(1) : 0;
+    document.getElementById('pd-summary-cards').innerHTML =
+      '<div class="pd-card"><div class="pd-val">' + formatDuration(pipe.totalDuration) + '</div><div class="pd-lbl">Toplam Süre</div></div>' +
+      '<div class="pd-card"><div class="pd-val">%' + sizePct + '</div><div class="pd-lbl">Boyut Azalma</div></div>' +
+      '<div class="pd-card"><div class="pd-val">' + cutSegs.length + '</div><div class="pd-lbl">Kesilen Blok</div></div>' +
+      '<div class="pd-card"><div class="pd-val">' + formatStepDur(totalCutSec) + '</div><div class="pd-lbl">Kazanılan Süre</div></div>';
+
+    // Pipeline adımları
+    var stepsHtml = '';
+    var prevSize = origSize;
+    DETAIL_STEPS.forEach(function(step) {
+      var key = String(step.key);
+      var done = doneSteps.indexOf(key) >= 0;
+      var det = stepDetails[key] || {};
+      var hasError = det.error;
+      var cls = hasError ? 'error' : done ? 'done' : 'pd-step';
+      var icon = hasError ? '✗' : done ? '✓' : '—';
+      var iconColor = hasError ? 'var(--red)' : done ? 'var(--green)' : 'var(--dim)';
+      var dur = det.duration ? formatStepDur(det.duration) : (done ? 'tamamlandı' : 'bekliyor');
+      var currSize = det.outputSize || null;
+      var sizeInfo = calcSizeChange(prevSize, currSize);
+      if (currSize) prevSize = currSize;
+      var btns = '';
+      if (done) btns = '<div class="pd-step-btns"><button class="btn btn-sm" onclick="alert(\'Ana uygulamadan dinleyin\')">▶ Dinle</button><button class="btn btn-sm" onclick="alert(\'Ana uygulamadan indirin\')">⬇ İndir</button></div>';
+
+      stepsHtml += '<div class="pd-step ' + cls + '">' +
+        '<div class="pd-step-top"><span class="pd-step-name" style="color:' + iconColor + '">' + icon + '  ' + key + '. ' + step.label + ' <span style="color:var(--dim);font-weight:400;font-size:11px">(' + step.desc + ')</span></span>' +
+        '<span class="pd-step-dur">' + dur + '</span></div>' +
+        '<div class="pd-step-size">' + sizeInfo + '</div>' +
+        (hasError ? '<div style="color:var(--red);font-size:11px;margin-top:4px">⚠ ' + det.error + '</div>' : '') +
+        btns + '</div>';
+    });
+    document.getElementById('pd-steps').innerHTML = stepsHtml;
+
+    // Konuşmacı analizi
+    if (diarSegs.length) {
+      var spkStats = {};
+      diarSegs.forEach(function(s) {
+        if (!spkStats[s.speaker]) spkStats[s.speaker] = 0;
+        spkStats[s.speaker] += (s.end - s.start);
+      });
+      var totalSpkTime = Object.values(spkStats).reduce(function(a,b) { return a+b; }, 0);
+      var colors = ['var(--accent)','var(--green)','var(--yellow)','var(--purple)','var(--red)','#06b6d4','#f97316','#ec4899'];
+      var spkHtml = '<h4 style="font-size:13px;margin-bottom:8px;color:var(--dim)">Konuşmacılar</h4><div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px">';
+      var ci = 0;
+      Object.entries(spkStats).sort(function(a,b) { return b[1]-a[1]; }).forEach(function(entry) {
+        var spk = entry[0], dur = entry[1];
+        var pct = totalSpkTime > 0 ? ((dur/totalSpkTime)*100).toFixed(0) : 0;
+        var col = colors[ci % colors.length]; ci++;
+        spkHtml += '<div style="display:flex;align-items:center;gap:8px;margin:4px 0"><span style="min-width:90px;font-size:11px;color:var(--text)">' + spk + '</span>' +
+          '<div style="flex:1;background:var(--bg3);border-radius:3px;height:14px;overflow:hidden"><div class="pd-spk-bar" style="width:' + pct + '%;background:' + col + '">' + pct + '%</div></div>' +
+          '<span style="min-width:50px;font-size:11px;color:var(--dim);text-align:right">' + formatDuration(dur) + '</span></div>';
+      });
+      spkHtml += '</div>';
+      document.getElementById('pd-speakers').innerHTML = spkHtml;
+    } else {
+      document.getElementById('pd-speakers').innerHTML = '';
+    }
+
+    // Transkript önizleme
+    if (trSegs.length) {
+      var last5 = trSegs.slice(-5);
+      var trHtml = '<h4 style="font-size:13px;margin-bottom:8px;color:var(--dim)">Transkript (son 5 segment)</h4><div class="pd-transcript">';
+      last5.forEach(function(s) {
+        var ts = Math.floor((s.start||0)/60) + ':' + String(Math.floor((s.start||0)%60)).padStart(2,'0');
+        trHtml += '<div class="seg"><span class="ts">' + ts + '</span><span class="spk">' + (s.speaker||'') + '</span>' + ((s.text||'').trim()) + '</div>';
+      });
+      trHtml += '</div>';
+      document.getElementById('pd-transcript').innerHTML = trHtml;
+    } else {
+      document.getElementById('pd-transcript').innerHTML = '';
+    }
+
+    // Hata günlüğü
+    var errors = [];
+    Object.entries(stepDetails).forEach(function(entry) {
+      if (entry[1] && entry[1].error) errors.push({ step: entry[0], error: entry[1].error });
+    });
+    if (errors.length) {
+      var errHtml = '<h4 style="font-size:13px;margin-bottom:8px;color:var(--red)">⚠ Hata Günlüğü</h4><div class="pd-error-log">';
+      errors.forEach(function(e) { errHtml += '<div style="margin:3px 0">Adım ' + e.step + ': ' + e.error + '</div>'; });
+      errHtml += '</div>';
+      document.getElementById('pd-errors').innerHTML = errHtml;
+    } else {
+      document.getElementById('pd-errors').innerHTML = '';
+    }
+  } catch(e) {
+    console.error('[detail]', e);
+    document.getElementById('pd-steps').innerHTML = '<div style="color:var(--red)">Hata: ' + e.message + '</div>';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BÖLÜM 3: Veritabanı Yönetimi
+// ══════════════════════════════════════════════════════════════════════════════
+async function runTests_database() {
+  setTime('database-time');
+  const results = [];
+  try {
+    var db = await openIDB();
+    var tbody = '';
+    var hasSession = false;
+    var stepAudioSize = 0;
+    for (var i = 0; i < STORES.length; i++) {
+      var store = STORES[i];
+      if (!db.objectStoreNames.contains(store)) {
+        results.push({ name: store + ' store', status: 'fail', detail: 'Mevcut değil' });
+        tbody += '<tr><td>' + store + '</td><td>—</td><td>—</td><td>—</td></tr>';
+        continue;
+      }
+      var count = await idbCount(db, store);
+      results.push({ name: store + ' store', status: count >= 0 ? 'pass' : 'fail', detail: count + ' kayıt' });
+      if (store === 'session' && count === 0) results.push({ name: 'Aktif session', status: 'warn', detail: 'Session boş' });
+      if (store === 'session' && count > 0) hasSession = true;
+      // Boyut tahmini (count bazlı kaba tahmin)
+      var estMB = store === 'step_audio' ? count * 15 : store === 'session' ? count * 20 : count * 0.01;
+      if (store === 'step_audio') stepAudioSize = estMB;
+      tbody += '<tr><td>' + store + '</td><td>' + count + '</td><td>~' + estMB.toFixed(1) + ' MB</td><td><button class="btn btn-sm btn-danger" onclick="clearStore(\'' + store + '\')">Temizle</button></td></tr>';
+    }
+    if (stepAudioSize > 2000) results.push({ name: 'step_audio boyutu', status: 'warn', detail: stepAudioSize.toFixed(0) + ' MB > 2 GB' });
+    results.push(await testEndpoint('/reset', 'GET'));
+    results.push(await testEndpoint('/reset-all', 'GET'));
+    document.getElementById('db-tbody').innerHTML = tbody;
+    db.close();
+  } catch(e) {
+    results.push({ name: 'IndexedDB', status: 'fail', detail: e.message });
+  }
+  renderTests('database-tests', results);
+  updateBadge('database', results);
+}
+
+async function clearStore(store) {
+  if (!confirm(store + ' store temizlensin mi?')) return;
+  try { var db = await openIDB(); await idbClear(db, store); db.close(); alert('Temizlendi!'); runTests_database(); } catch(e) { alert('Hata: ' + e.message); }
+}
+function doReset() { if (confirm('Aktif proje sıfırlansın mı?')) location.href = BASE + '/reset'; }
+function doResetAll() { if (confirm('TÜM veriler silinsin mi?')) { if (confirm('Bu işlem geri alınamaz! Emin misiniz?')) location.href = BASE + '/reset-all'; } }
+async function doCleanOld() {
+  var cutoff = Date.now() - 7 * 24 * 3600 * 1000;
+  try {
+    var db = await openIDB();
+    var tx = db.transaction('session', 'readwrite');
+    var store = tx.objectStore('session');
+    var all = await new Promise(function(r) { var req = store.getAll(); req.onsuccess = function() { r(req.result || []); }; });
+    var keys = await new Promise(function(r) { var req = store.getAllKeys(); req.onsuccess = function() { r(req.result || []); }; });
+    var deleted = 0;
+    for (var i = 0; i < all.length; i++) {
+      if (keys[i] === 'current') continue;
+      deleted++;
+      store.delete(keys[i]);
+    }
+    db.close();
+    alert(deleted + ' eski kayıt silindi.');
+    runTests_database();
+  } catch(e) { alert('Hata: ' + e.message); }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BÖLÜM 4: Model Yönetimi
+// ══════════════════════════════════════════════════════════════════════════════
+async function runTests_models() {
+  setTime('models-time');
+  const results = [];
+  var tbody = '';
+  var totalVram = 0;
+  var sysVram = 0;
+  // Sistem VRAM bilgisi al
+  try {
+    var sr = await fetchWithTimeout(BASE + '/api/system-stats');
+    if (sr.ok) { var sd = await sr.json(); sysVram = sd.vram_total_mb || 0; }
+  } catch(e) {}
+
+  for (var i = 0; i < MODELS.length; i++) {
+    var m = MODELS[i];
+    totalVram += m.vram_mb;
+    var status = 'offline', statusClass = 'offline', detail = '';
+    try {
+      var fd = new FormData();
+      var res = await fetchWithTimeout(BASE + m.endpoint, { method: 'POST', body: fd }, 5000);
+      if (res.status < 500) { status = 'online'; statusClass = 'online'; detail = 'HTTP ' + res.status; }
+      else { status = 'offline'; detail = 'HTTP ' + res.status; }
+    } catch(e) {
+      if (e.name === 'AbortError') { status = 'yavaş'; statusClass = 'slow'; detail = 'Timeout'; }
+      else { detail = e.message; }
+    }
+    results.push({ name: m.name, status: status === 'online' ? 'pass' : status === 'yavaş' ? 'warn' : 'fail', detail: detail });
+    tbody += '<tr><td><b>' + m.name + '</b></td><td>' + m.type + '</td><td>' + (m.vram_mb || 'CPU') + ' MB</td><td><span class="status-dot ' + statusClass + '"></span> ' + status.toUpperCase() + '</td></tr>';
+  }
+
+  if (sysVram > 0 && totalVram > sysVram) results.push({ name: 'Toplam VRAM talebi', status: 'warn', detail: totalVram + ' MB > ' + sysVram + ' MB' });
+  results.push(await testEndpoint('/api/config'));
+
+  document.getElementById('models-tbody').innerHTML = tbody;
+  document.getElementById('models-summary').textContent = 'Toplam beklenen VRAM: ' + totalVram + ' MB / ' + (sysVram || '?') + ' MB mevcut';
+  renderTests('models-tests', results);
+  updateBadge('models', results);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BÖLÜM 5: İşlem Ayarları
+// ══════════════════════════════════════════════════════════════════════════════
+async function runTests_settings() {
+  setTime('settings-time');
+  const results = [];
+  // HF Token
+  try {
+    var res = await fetchWithTimeout(BASE + '/api/config');
+    results.push({ name: 'GET /api/config', status: res.ok ? 'pass' : 'fail', detail: 'HTTP ' + res.status });
+    if (res.ok) {
+      var d = await res.json();
+      var tok = d.hf_token || localStorage.getItem('hf_token') || '';
+      document.getElementById('hf-token-input').value = tok;
+      results.push({ name: 'HF Token', status: tok.length >= 20 ? 'pass' : 'warn', detail: tok.length + ' karakter' });
+    }
+  } catch(e) { results.push({ name: 'GET /api/config', status: 'fail', detail: e.message }); }
+  // localStorage
+  try { localStorage.setItem('_test', '1'); localStorage.removeItem('_test'); results.push({ name: 'localStorage', status: 'pass', detail: 'Yazılabilir' }); }
+  catch(e) { results.push({ name: 'localStorage', status: 'fail', detail: e.message }); }
+  // Varsayılan adımlar
+  var saved = JSON.parse(localStorage.getItem('admin_default_steps') || 'null');
+  var stepsHtml = '';
+  STEP_NAMES.forEach(function(s) {
+    var checked = saved ? (saved[s.id] !== false) : s.def;
+    stepsHtml += '<div class="chk-row"><input type="checkbox" data-step="' + s.id + '" ' + (checked ? 'checked' : '') + ' onchange="saveDefaultSteps()"> ' + (s.num || s.id) + '. ' + s.label + '</div>';
+  });
+  document.getElementById('default-steps').innerHTML = stepsHtml;
+  var checkedCount = document.querySelectorAll('#default-steps input:checked').length;
+  if (checkedCount === 0) results.push({ name: 'Varsayılan adımlar', status: 'warn', detail: '0 adım seçili' });
+
+  // Ses parametreleri
+  var params = JSON.parse(localStorage.getItem('admin_audio_params') || '{}');
+  document.getElementById('audio-params').innerHTML =
+    '<div class="setting-row"><label>VAD eşik</label><input type="range" min="0.1" max="0.9" step="0.05" value="' + (params.vad_threshold || 0.5) + '" oninput="this.nextElementSibling.textContent=this.value;saveAudioParams()"><span class="val">' + (params.vad_threshold || 0.5) + '</span></div>' +
+    '<div class="setting-row"><label>NR gücü</label><input type="range" min="0.1" max="1.0" step="0.05" value="' + (params.nr_prop || 0.65) + '" oninput="this.nextElementSibling.textContent=this.value;saveAudioParams()"><span class="val">' + (params.nr_prop || 0.65) + '</span></div>' +
+    '<div class="setting-row"><label>Pad ms</label><input type="number" min="0" max="1000" step="10" value="' + (params.pad_ms || 300) + '" onchange="saveAudioParams()"></div>' +
+    '<div class="setting-row"><label>Min konuşma ms</label><input type="number" min="0" max="1000" step="10" value="' + (params.min_speech_ms || 250) + '" onchange="saveAudioParams()"></div>';
+
+  // GPU clock
+  try {
+    var sr = await fetchWithTimeout(BASE + '/api/system-stats');
+    if (sr.ok) {
+      var sd = await sr.json();
+      document.getElementById('gpu-clock-area').innerHTML =
+        '<div style="font-size:12px;color:var(--dim)">Mevcut: ' + (sd.gpu_clock_mhz || '?') + ' MHz | Limit: ' + (sd.gpu_clock_limit_mhz || '?') + ' MHz</div>' +
+        '<div style="margin-top:6px;font-size:11px;color:var(--dim)">Terminalde: <code style="background:var(--bg3);padding:2px 6px;border-radius:3px">nvidia-smi -lgc 300,2470</code></div>';
+    }
+  } catch(e) {}
+
+  renderTests('settings-tests', results);
+  updateBadge('settings', results);
+}
+
+function saveHfToken() { localStorage.setItem('hf_token', document.getElementById('hf-token-input').value); alert('Token kaydedildi (localStorage)'); }
+function saveDefaultSteps() {
+  var obj = {};
+  document.querySelectorAll('#default-steps input[data-step]').forEach(function(inp) { obj[inp.dataset.step] = inp.checked; });
+  localStorage.setItem('admin_default_steps', JSON.stringify(obj));
+}
+function saveAudioParams() {
+  var inputs = document.querySelectorAll('#audio-params input');
+  var obj = { vad_threshold: parseFloat(inputs[0].value), nr_prop: parseFloat(inputs[1].value), pad_ms: parseInt(inputs[2].value), min_speech_ms: parseInt(inputs[3].value) };
+  localStorage.setItem('admin_audio_params', JSON.stringify(obj));
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BÖLÜM 6: Sunucu Logları
+// ══════════════════════════════════════════════════════════════════════════════
+async function runTests_logs() {
+  setTime('logs-time');
+  const results = [];
+  try {
+    var res = await fetchWithTimeout(BASE + '/api/server-log?n=500');
+    results.push({ name: 'GET /api/server-log', status: res.ok ? 'pass' : 'fail', detail: 'HTTP ' + res.status });
+    if (res.ok) {
+      var d = await res.json();
+      _logData = d.logs || [];
+      results.push(_logData.length === 0 ? { name: 'Log içeriği', status: 'warn', detail: 'Boş' } : { name: 'Log içeriği', status: 'pass', detail: _logData.length + ' satır' });
+      var errors = _logData.filter(function(l) { return l.level === 'ERROR'; }).length;
+      var criticals = _logData.filter(function(l) { return l.level === 'CRITICAL'; }).length;
+      if (criticals > 0) results.push({ name: 'CRITICAL hatalar', status: 'fail', detail: criticals + ' adet' });
+      if (errors > 0) results.push({ name: 'ERROR hatalar', status: 'warn', detail: errors + ' adet' });
+      renderLogContent();
+    }
+  } catch(e) { results.push({ name: 'API erişimi', status: 'fail', detail: e.message }); }
+  renderTests('logs-tests', results);
+  updateBadge('logs', results);
+}
+
+function renderLogContent() {
+  var filtered = _logData;
+  if (_logFilter) filtered = filtered.filter(function(l) { return (l.level + ' ' + l.msg).toLowerCase().includes(_logFilter.toLowerCase()); });
+  var html = filtered.map(function(l) {
+    var cls = l.level === 'ERROR' || l.level === 'CRITICAL' ? 'log-error' : l.level === 'WARNING' ? 'log-warn' : l.level === 'DEBUG' ? 'log-debug' : 'log-info';
+    return '<span class="' + cls + '">[' + l.ts + '] ' + l.level + ' ' + l.msg.replace(/</g, '&lt;') + '</span>';
+  }).join('\n');
+  document.getElementById('log-content').innerHTML = html || '<span style="color:var(--dim)">Log boş</span>';
+}
+
+function fetchLogs(n) { fetchWithTimeout(BASE + '/api/server-log?n=' + n).then(function(r) { return r.json(); }).then(function(d) { _logData = d.logs || []; renderLogContent(); }); }
+function filterLogs(f) { _logFilter = f; renderLogContent(); }
+function downloadLogs() {
+  var txt = _logData.map(function(l) { return '[' + l.ts + '] ' + l.level + ' ' + l.msg; }).join('\n');
+  var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt])); a.download = 'server_logs.txt'; a.click();
+}
+function toggleLiveLogs() {
+  if (document.getElementById('log-live').checked) { _liveTimer = setInterval(function() { runTests_logs(); }, 3000); }
+  else { if (_liveTimer) clearInterval(_liveTimer); _liveTimer = null; }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BÖLÜM 7: Raporlar
+// ══════════════════════════════════════════════════════════════════════════════
+async function runTests_reports() {
+  setTime('reports-time');
+  const results = [];
+  try {
+    var db = await openIDB();
+    results.push(db.objectStoreNames.contains('projects') ? { name: 'projects store', status: 'pass', detail: 'OK' } : { name: 'projects store', status: 'fail', detail: 'Yok' });
+    var pipelines = await idbGetAll(db, 'pipeline');
+    results.push(pipelines.length > 0 ? { name: 'Pipeline verisi', status: 'pass', detail: pipelines.length + ' kayıt' } : { name: 'Pipeline verisi', status: 'warn', detail: 'Boş' });
+    results.push(await testEndpoint('/api/html-to-pdf', 'POST'));
+    // Blob testi
+    try { var b = new Blob(['test'], { type: 'text/csv' }); results.push({ name: 'Blob oluşturma', status: 'pass', detail: 'OK' }); }
+    catch(e) { results.push({ name: 'Blob oluşturma', status: 'fail', detail: e.message }); }
+
+    // Proje listesi
+    var projects = JSON.parse(localStorage.getItem('ses_projeler') || '[]');
+    var tbody = '';
+    var totalDur = 0;
+    var totalOrigMB = 0, totalFinalMB = 0;
+    var stepCounts = {};
+    projects.slice(0, 10).forEach(function(p, i) {
+      var pData = pipelines.find(function(pp) { return pp && pp.projectName === p.name; });
+      var steps = pData ? (pData.doneSteps || []).length : 0;
+      (pData?.doneSteps || []).forEach(function(s) { stepCounts[s] = (stepCounts[s] || 0) + 1; });
+      var date = p.updatedAt ? new Date(p.updatedAt).toLocaleString('tr-TR') : '—';
+      tbody += '<tr><td><input type="checkbox" class="rpt-chk" data-idx="' + i + '"></td><td>' + (p.name || '—') + '</td><td>' + date + '</td><td>' + steps + '</td><td><button class="btn btn-sm" onclick="generatePDF(\'' + p.id + '\')">PDF</button></td></tr>';
+    });
+    document.getElementById('reports-tbody').innerHTML = tbody || '<tr><td colspan="5" style="color:var(--dim);text-align:center">Proje yok</td></tr>';
+
+    // İstatistik kartları
+    var mostUsed = Object.entries(stepCounts).sort(function(a, b) { return b[1] - a[1]; });
+    document.getElementById('report-stats').innerHTML =
+      '<div class="metric-card"><div class="val">' + projects.length + '</div><div class="lbl">Toplam Proje</div></div>' +
+      '<div class="metric-card"><div class="val">' + (totalDur / 3600).toFixed(1) + '</div><div class="lbl">İşlenen Süre (saat)</div></div>' +
+      '<div class="metric-card"><div class="val">—</div><div class="lbl">Ort. Küçülme (%)</div></div>' +
+      '<div class="metric-card"><div class="val">' + (mostUsed.length ? mostUsed[0][0] : '—') + '</div><div class="lbl">En Çok Kullanılan Adım</div></div>';
+    db.close();
+  } catch(e) { results.push({ name: 'IDB erişim', status: 'fail', detail: e.message }); }
+  renderTests('reports-tests', results);
+  updateBadge('reports', results);
+}
+
+// Select all checkbox
+document.getElementById('rpt-all').addEventListener('change', function() {
+  var checked = this.checked;
+  document.querySelectorAll('.rpt-chk').forEach(function(c) { c.checked = checked; });
+});
+
+function exportCSV() {
+  var projects = JSON.parse(localStorage.getItem('ses_projeler') || '[]');
+  var csv = 'Proje Adı,Tarih,Adım Sayısı\n';
+  projects.forEach(function(p) {
+    var date = p.updatedAt ? new Date(p.updatedAt).toLocaleString('tr-TR') : '';
+    csv += '"' + (p.name || '') + '","' + date + '","—"\n';
+  });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = 'projeler.csv'; a.click();
+}
+
+function generatePDF(id) { alert('PDF oluşturma ana uygulamadan yapılır — projeyi açıp "İşlem Raporunu PDF İndir" butonunu kullanın.'); }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Tümünü Çalıştır
+// ══════════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════════
+// Hata Geçmişi
+// ══════════════════════════════════════════════════════════════════════════════
+let _allErrors = [];
+let _errSevFilter = 'all';
+const DISMISSED_KEY = 'admin_dismissed_errors';
+const ERR_STEP_NAMES = {'1':'Whisper','1b':'Temizleme','2':'Demucs','3':'NoiseReduce','4':'DNS64','5':'SpeechOnly','6':'Diarize','7':'VAD','8b':'Dengeleme','8':'Kesim','9a':'VoiceFixer','9b':'Resemble','9c':'DeepFilter'};
+
+function errorId(err) { return btoa(unescape(encodeURIComponent(err.source+(err.timestamp||0)+(err.message||'').slice(0,50)))).slice(0,16); }
+
+async function collectPipelineErrors() {
+  var errors = [];
+  try {
+    var db = await openIDB();
+    var pipelines = await idbGetAll(db, 'pipeline');
+    db.close();
+    pipelines.forEach(function(pipe) {
+      if (!pipe || !pipe.stepDetails) return;
+      var projName = pipe.projectName || '—';
+      Object.entries(pipe.stepDetails).forEach(function(entry) {
+        var step = entry[0], det = entry[1];
+        if (det && det.error) {
+          errors.push({
+            source:'pipeline', project:projName, step:step,
+            stepName: ERR_STEP_NAMES[step]||step,
+            message: det.error,
+            timestamp: det.endTime || pipe.timestamp || Date.now(),
+            severity: 'error'
+          });
+        }
+      });
+    });
+  } catch(e) { console.warn('[errors] pipeline:', e); }
+  return errors;
+}
+
+async function collectLogErrors() {
+  var errors = [];
+  try {
+    var res = await fetchWithTimeout(BASE+'/api/server-log?n=500');
+    if (!res.ok) return errors;
+    var data = await res.json();
+    var logs = data.logs || [];
+    logs.forEach(function(l) {
+      if (!l.level) return;
+      var sev = null;
+      if (l.level === 'CRITICAL') sev = 'critical';
+      else if (l.level === 'ERROR') sev = 'error';
+      else if (l.level === 'WARNING') sev = 'warning';
+      if (!sev) return;
+      errors.push({
+        source:'server-log', project:null, step:null, stepName:null,
+        message: l.msg || '',
+        timestamp: l.ts ? Date.now() : Date.now(), // ts sadece saat
+        severity: sev
+      });
+    });
+  } catch(e) { console.warn('[errors] log:', e); }
+  return errors;
+}
+
+async function runTests_errors() {
+  setTime('errors-time');
+  var pipeErrors = await collectPipelineErrors();
+  var logErrors = await collectLogErrors();
+  _allErrors = pipeErrors.concat(logErrors);
+  _allErrors.sort(function(a,b) { return (b.timestamp||0)-(a.timestamp||0); });
+
+  // Proje dropdown doldur
+  var projSet = new Set();
+  _allErrors.forEach(function(e) { if (e.project) projSet.add(e.project); });
+  var projSelect = document.getElementById('err-project-filter');
+  var opts = '<option value="all">Proje: Tümü</option>';
+  projSet.forEach(function(p) { opts += '<option value="'+p+'">'+p+'</option>'; });
+  projSelect.innerHTML = opts;
+
+  renderErrors();
+
+  // Badge güncelle
+  var dismissed = JSON.parse(localStorage.getItem(DISMISSED_KEY)||'[]');
+  var visible = _allErrors.filter(function(e) { return dismissed.indexOf(errorId(e)) < 0; });
+  updateErrorBadge(visible.length);
+}
+
+function renderErrors() {
+  var dismissed = JSON.parse(localStorage.getItem(DISMISSED_KEY)||'[]');
+  var data = _allErrors.filter(function(e) { return dismissed.indexOf(errorId(e)) < 0; });
+
+  // Filtreler
+  if (_errSevFilter !== 'all') data = data.filter(function(e) { return e.severity === _errSevFilter; });
+  var srcFilter = document.getElementById('err-source-filter').value;
+  if (srcFilter !== 'all') data = data.filter(function(e) { return e.source === srcFilter; });
+  var projFilter = document.getElementById('err-project-filter').value;
+  if (projFilter !== 'all') data = data.filter(function(e) { return e.project === projFilter; });
+
+  // Özet
+  var critical = _allErrors.filter(function(e) { return e.severity==='critical'&&dismissed.indexOf(errorId(e))<0; }).length;
+  var errors = _allErrors.filter(function(e) { return e.severity==='error'&&dismissed.indexOf(errorId(e))<0; }).length;
+  var warnings = _allErrors.filter(function(e) { return e.severity==='warning'&&dismissed.indexOf(errorId(e))<0; }).length;
+  var total = critical+errors+warnings;
+  document.getElementById('err-summary').innerHTML =
+    'Toplam: <b>'+total+'</b> | Kritik: <b style="color:var(--red)">'+critical+'</b> | Hata: <b style="color:#f97316">'+errors+'</b> | Uyarı: <b style="color:var(--yellow)">'+warnings+'</b>' +
+    ' <button class="btn btn-sm" style="margin-left:auto" onclick="clearAllErrors()">Tümünü Temizle</button>';
+
+  updateErrorBadge(total);
+
+  if (!data.length) {
+    document.getElementById('err-list').innerHTML = '<div class="err-empty">Hata bulunamadı — sistem sağlıklı görünüyor ✓</div>';
+    return;
+  }
+
+  var max = 200;
+  var html = '';
+  data.slice(0, max).forEach(function(e) {
+    var eid = errorId(e);
+    var sevLabel = e.severity === 'critical' ? 'KRİTİK' : e.severity === 'error' ? 'HATA' : 'UYARI';
+    var srcBadge = '';
+    if (e.source === 'pipeline' && e.project) {
+      srcBadge = '<span class="error-source clickable" onclick="openProjectDetail(\''+e.project.replace(/'/g,"\\'")+'\')">Pipeline › '+e.project+' › '+e.stepName+'</span>';
+    } else {
+      srcBadge = '<span class="error-source">Sunucu Logu</span>';
+    }
+    html += '<div class="error-row severity-'+e.severity+'" id="err-'+eid+'">' +
+      '<div class="error-header"><span class="severity-dot"></span><span class="severity-label">'+sevLabel+'</span>' +
+      '<span class="error-time">'+formatDate(e.timestamp)+'</span>'+srcBadge+
+      '<button class="dismiss-btn" onclick="dismissError(\''+eid+'\')">✕</button></div>' +
+      '<div class="error-message">'+((e.message||'').replace(/</g,'&lt;').substring(0,500))+'</div></div>';
+  });
+  if (data.length > max) html += '<div style="text-align:center;color:var(--dim);padding:10px;font-size:12px">... ve '+(data.length-max)+' hata daha</div>';
+  document.getElementById('err-list').innerHTML = html;
+}
+
+function setErrFilter(btn, type) {
+  if (type === 'sev') {
+    document.querySelectorAll('#err-toolbar .filter-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    _errSevFilter = btn.dataset.sev;
+  }
+  renderErrors();
+}
+
+function dismissError(eid) {
+  var dismissed = JSON.parse(localStorage.getItem(DISMISSED_KEY)||'[]');
+  dismissed.push(eid);
+  localStorage.setItem(DISMISSED_KEY, JSON.stringify(dismissed));
+  var el = document.getElementById('err-'+eid);
+  if (el) el.remove();
+  var remaining = document.querySelectorAll('.error-row').length;
+  updateErrorBadge(remaining);
+  if (!remaining) document.getElementById('err-list').innerHTML = '<div class="err-empty">Hata bulunamadı — sistem sağlıklı görünüyor ✓</div>';
+}
+
+function clearAllErrors() {
+  localStorage.removeItem(DISMISSED_KEY);
+  // Tüm hataları dismissed yap
+  var allIds = _allErrors.map(errorId);
+  localStorage.setItem(DISMISSED_KEY, JSON.stringify(allIds));
+  renderErrors();
+}
+
+function updateErrorBadge(count) {
+  var badge = document.getElementById('badge-errors');
+  if (!badge) return;
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'inline-block' : 'none';
+}
+
+// 30 saniyede bir sunucu loglarını yenile
+setInterval(function() {
+  if (document.getElementById('s-errors').classList.contains('active')) runTests_errors();
+}, 30000);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// BÖLÜM: TTS Test
+// ══════════════════════════════════════════════════════════════════════════════
+let _ttsBlob = null;
+
+async function ttsGenerate() {
+  const text = document.getElementById('tts-text').value.trim();
+  if (!text) { alert('Metin girin.'); return; }
+  const lang   = document.getElementById('tts-lang').value;
+  const refFile = document.getElementById('tts-ref').files[0];
+  const btn    = document.getElementById('tts-btn');
+  const status = document.getElementById('tts-status');
+  const result = document.getElementById('tts-result');
+
+  btn.disabled = true; btn.textContent = '⏳ Seslendiriliyor...';
+  status.textContent = '⏳ Model yükleniyor ve metin seslendiriliyor... (ilk seferde ~2 dakika sürebilir)';
+  status.style.color = 'var(--yellow)';
+  result.style.display = 'none';
+  _ttsBlob = null;
+
+  const fd = new FormData();
+  fd.append('text', text);
+  fd.append('language', lang);
+  if (refFile) fd.append('speaker_wav', refFile);
+
+  try {
+    const t0 = Date.now();
+    const resp = await fetch(BASE + '/api/tts', { method: 'POST', body: fd });
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: resp.statusText }));
+      throw new Error(err.error || resp.statusText);
+    }
+    _ttsBlob = await resp.blob();
+    const audio = document.getElementById('tts-audio');
+    audio.src = URL.createObjectURL(_ttsBlob);
+    result.style.display = 'block';
+    status.textContent = '✓ Tamamlandı — ' + elapsed + 's, ' + ((_ttsBlob.size/1024).toFixed(0)) + ' KB';
+    status.style.color = 'var(--green)';
+  } catch(e) {
+    status.textContent = '✗ Hata: ' + e.message;
+    status.style.color = 'var(--red)';
+  } finally {
+    btn.disabled = false; btn.textContent = '🗣 Seslendir';
+  }
+}
+
+function ttsDownload() {
+  if (!_ttsBlob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(_ttsBlob);
+  a.download = 'tts_output.mp3';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+
+async function runTests_tts() {
+  setTime('tts-time');
+  const results = [];
+  const metrics = document.getElementById('tts-metrics');
+
+  // Test 1: TTS endpoint erişilebilir mi
+  try {
+    const r = await fetch(BASE + '/api/tts/voices', { signal: AbortSignal.timeout(5000) });
+    const d = await r.json();
+    if (d.success) {
+      results.push({ name: 'TTS Modülleri', status: 'pass', detail: 'Model: ' + d.current });
+      metrics.innerHTML = metric('Model', d.current) + metric('Çoklu Dil', d.multilingual?.length || 0) + metric('Toplam Model', d.all_count || '?');
+    } else {
+      results.push({ name: 'TTS Modülleri', status: 'fail', detail: d.error || 'Bilinmeyen hata' });
+      metrics.innerHTML = metric('Durum', '❌ ' + (d.error || 'Hata'));
+    }
+  } catch(e) {
+    results.push({ name: 'TTS Bağlantısı', status: 'fail', detail: e.message });
+    metrics.innerHTML = metric('Durum', '❌ Bağlantı hatası');
+  }
+
+  renderTests('tts-tests', results);
+  updateBadge('badge-tts', results);
+}
+
+async function runAllTests() {
+  await runTests_system();
+  await runTests_projects();
+  await runTests_database();
+  await runTests_models();
+  await runTests_settings();
+  await runTests_logs();
+  await runTests_errors();
+  await runTests_reports();
+  await runTests_tts();
+}
+
+// Sayfa açıldığında ilk bölüm testlerini çalıştır
+runTests_system();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Yedekleme Sistemi ─────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+var BACKUP_DB_NAME = 'voicecraft';
+var BACKUP_DB_VERSION = 9;
+var BACKUP_STORES = ['session','transcripts','diarize','vad','projects','pipeline','step_audio'];
+
+function backupLog(msg, type) {
+  var el = document.getElementById('backup-log');
+  var cls = type === 'error' ? 'log-error' : type === 'warn' ? 'log-warn' : type === 'ok' ? 'log-info' : '';
+  el.innerHTML += '<div class="' + cls + '">[' + new Date().toLocaleTimeString('tr') + '] ' + msg + '</div>';
+  el.scrollTop = el.scrollHeight;
+}
+
+function backupProgress(pct, text) {
+  var wrap = document.getElementById('backup-progress');
+  wrap.style.display = 'block';
+  document.getElementById('backup-progress-bar').style.width = pct + '%';
+  if (text) document.getElementById('backup-status-text').textContent = text;
+  if (pct >= 100) {
+    document.getElementById('backup-spinner').textContent = '✅';
+    document.getElementById('backup-spinner').style.animation = 'none';
+  }
+}
+
+function openBackupDB() {
+  return new Promise(function(res, rej) {
+    var req = indexedDB.open(BACKUP_DB_NAME, BACKUP_DB_VERSION);
+    req.onupgradeneeded = function(e) {
+      var db = e.target.result;
+      BACKUP_STORES.forEach(function(s) {
+        if (!db.objectStoreNames.contains(s)) db.createObjectStore(s);
+      });
+    };
+    req.onsuccess = function(e) { res(e.target.result); };
+    req.onerror = function(e) { rej(e.target.error); };
+  });
+}
+
+function exportStore(db, storeName) {
+  return new Promise(function(res, rej) {
+    var tx = db.transaction(storeName, 'readonly');
+    var store = tx.objectStore(storeName);
+    var items = [];
+    var cursor = store.openCursor();
+    cursor.onsuccess = function(e) {
+      var c = e.target.result;
+      if (c) {
+        var val = c.value;
+        // ArrayBuffer → Base64 çevrimi
+        if (val instanceof ArrayBuffer) {
+          val = { __type: 'ArrayBuffer', data: arrayBufferToBase64(val) };
+        } else if (val && typeof val === 'object') {
+          val = serializeValue(val);
+        }
+        items.push({ key: c.key, value: val });
+        c.continue();
+      } else {
+        res(items);
+      }
+    };
+    cursor.onerror = function(e) { rej(e.target.error); };
+  });
+}
+
+function serializeValue(obj) {
+  if (obj instanceof ArrayBuffer) {
+    return { __type: 'ArrayBuffer', data: arrayBufferToBase64(obj) };
+  }
+  if (obj instanceof Blob) {
+    return { __type: 'Blob', note: 'Blob verileri JSON olarak dışa aktarılamaz' };
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(function(item) { return serializeValue(item); });
+  }
+  if (obj && typeof obj === 'object' && !(obj instanceof Date)) {
+    var result = {};
+    for (var k in obj) {
+      if (obj.hasOwnProperty(k)) {
+        result[k] = serializeValue(obj[k]);
+      }
+    }
+    return result;
+  }
+  return obj;
+}
+
+function arrayBufferToBase64(buffer) {
+  var bytes = new Uint8Array(buffer);
+  // Chunk-based conversion to avoid "Invalid string length" on large buffers
+  var CHUNK = 32768;
+  var parts = [];
+  for (var i = 0; i < bytes.byteLength; i += CHUNK) {
+    var slice = bytes.subarray(i, Math.min(i + CHUNK, bytes.byteLength));
+    parts.push(String.fromCharCode.apply(null, slice));
+  }
+  return btoa(parts.join(''));
+}
+
+// Large stores are exported separately to avoid memory issues
+var LARGE_STORES = ['step_audio', 'session'];
+var LARGE_STORE_CHUNK = 10; // items per file
+
+async function exportAllDB() {
+  var db = await openBackupDB();
+  var ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  var backup = { _meta: { date: new Date().toISOString(), version: BACKUP_DB_VERSION, app: 'VoiceCraft AI' }, stores: {} };
+  var totalSize = 0;
+
+  for (var i = 0; i < BACKUP_STORES.length; i++) {
+    var name = BACKUP_STORES[i];
+    try {
+      if (LARGE_STORES.indexOf(name) >= 0) {
+        // Export large stores in chunks as separate files
+        var items = await exportStore(db, name);
+        backup.stores[name] = { __chunked: true, count: items.length };
+        backupLog('  ✓ ' + name + ': ' + items.length + ' kayıt (parçalı)', 'ok');
+        if (items.length > 0) {
+          for (var c = 0; c < items.length; c += LARGE_STORE_CHUNK) {
+            var chunk = items.slice(c, c + LARGE_STORE_CHUNK);
+            var chunkIdx = Math.floor(c / LARGE_STORE_CHUNK) + 1;
+            var totalChunks = Math.ceil(items.length / LARGE_STORE_CHUNK);
+            backupLog('    → Parça ' + chunkIdx + '/' + totalChunks + ' indiriliyor...', 'ok');
+            try {
+              totalSize += downloadJSON({ _store: name, _chunk: chunkIdx, _total: totalChunks, items: chunk }, 'voicecraft-' + name + '-part' + chunkIdx + '-' + ts + '.json');
+            } catch(ce) {
+              backupLog('    ✗ Parça ' + chunkIdx + ' hatası: ' + ce.message, 'error');
+            }
+          }
+        }
+      } else {
+        backup.stores[name] = await exportStore(db, name);
+        backupLog('  ✓ ' + name + ': ' + backup.stores[name].length + ' kayıt', 'ok');
+      }
+    } catch(e) {
+      backup.stores[name] = [];
+      backupLog('  ✗ ' + name + ': ' + e.message, 'error');
+    }
+    backupProgress(20 + (i / BACKUP_STORES.length) * 40, name + ' dışa aktarılıyor...');
+  }
+  db.close();
+  backup._totalSize = totalSize;
+  return backup;
+}
+
+function downloadJSON(data, filename) {
+  // Stream-write to avoid "Invalid string length" on huge objects
+  var parts = [];
+  var stores = data.stores;
+  if (stores) {
+    // Build JSON manually for top-level backup to avoid stringify on huge object
+    var meta = JSON.stringify(data._meta || {});
+    parts.push('{"_meta":' + meta + ',"stores":{');
+    var keys = Object.keys(stores);
+    for (var i = 0; i < keys.length; i++) {
+      if (i > 0) parts.push(',');
+      parts.push('"' + keys[i] + '":' + JSON.stringify(stores[keys[i]]));
+    }
+    parts.push('}}');
+  } else {
+    parts.push(JSON.stringify(data));
+  }
+  var blob = new Blob(parts, { type: 'application/json' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return blob.size;
+}
+
+function listProjectFiles() {
+  // Proje dosya listesi (public/ altındaki dosyalar) — statik sunucu bilinen dosyalar
+  return ['index.html','admin.html','app.js','style.css','canvas-overlay.js','project-manager.js'];
+}
+
+async function downloadFileAsText(path) {
+  var resp = await fetch('/' + path);
+  if (!resp.ok) throw new Error(path + ' indirilemedi: ' + resp.status);
+  return await resp.text();
+}
+
+async function exportFiles() {
+  var files = listProjectFiles();
+  var backup = { _meta: { date: new Date().toISOString(), app: 'VoiceCraft AI', type: 'files' }, files: {} };
+  for (var i = 0; i < files.length; i++) {
+    try {
+      backup.files[files[i]] = await downloadFileAsText(files[i]);
+      backupLog('  ✓ ' + files[i] + ' okundu', 'ok');
+    } catch(e) {
+      backupLog('  ✗ ' + files[i] + ': ' + e.message, 'warn');
+    }
+    backupProgress(60 + (i / files.length) * 35, files[i] + ' okunuyor...');
+  }
+  return backup;
+}
+
+async function backupAll() {
+  document.getElementById('backup-log').innerHTML = '';
+  document.getElementById('backup-spinner').textContent = '⏳';
+  document.getElementById('backup-spinner').style.animation = 'spin 1s linear infinite';
+  var ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+  try {
+    backupProgress(5, 'Veritabanı dışa aktarılıyor...');
+    backupLog('═══ Tam Yedek Başladı ═══');
+    backupLog('📅 ' + new Date().toLocaleString('tr'));
+
+    // DB Export
+    backupLog('');
+    backupLog('🗄 Veritabanı dışa aktarılıyor...');
+    var dbData = await exportAllDB();
+    var dbSize = downloadJSON(dbData, 'voicecraft-db-' + ts + '.json');
+    backupLog('✅ DB yedeği indirildi (' + formatSize(dbSize) + ')', 'ok');
+
+    // Files Export
+    backupLog('');
+    backupLog('📂 Proje dosyaları dışa aktarılıyor...');
+    var fileData = await exportFiles();
+    var fileSize = downloadJSON(fileData, 'voicecraft-files-' + ts + '.json');
+    backupLog('✅ Dosya yedeği indirildi (' + formatSize(fileSize) + ')', 'ok');
+
+    backupProgress(100, 'Yedekleme tamamlandı!');
+    backupLog('');
+    backupLog('═══ Tam Yedek Tamamlandı ═══', 'ok');
+
+    // Son yedek bilgisini güncelle
+    localStorage.setItem('lastBackup', JSON.stringify({ date: new Date().toISOString(), dbSize: dbSize, fileSize: fileSize }));
+    updateBackupInfo();
+  } catch(e) {
+    backupLog('❌ Hata: ' + e.message, 'error');
+    backupProgress(100, 'Hata oluştu!');
+    document.getElementById('backup-spinner').textContent = '❌';
+  }
+}
+
+async function backupDBOnly() {
+  document.getElementById('backup-log').innerHTML = '';
+  document.getElementById('backup-spinner').textContent = '⏳';
+  document.getElementById('backup-spinner').style.animation = 'spin 1s linear infinite';
+  var ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+  try {
+    backupProgress(5, 'Veritabanı dışa aktarılıyor...');
+    backupLog('🗄 Veritabanı yedeği başladı...');
+    var dbData = await exportAllDB();
+    var dbSize = downloadJSON(dbData, 'voicecraft-db-' + ts + '.json');
+    backupProgress(100, 'DB yedeği tamamlandı!');
+    backupLog('✅ İndirildi (' + formatSize(dbSize) + ')', 'ok');
+
+    localStorage.setItem('lastBackup', JSON.stringify({ date: new Date().toISOString(), dbSize: dbSize }));
+    updateBackupInfo();
+  } catch(e) {
+    backupLog('❌ Hata: ' + e.message, 'error');
+  }
+}
+
+async function backupFilesOnly() {
+  document.getElementById('backup-log').innerHTML = '';
+  document.getElementById('backup-spinner').textContent = '⏳';
+  document.getElementById('backup-spinner').style.animation = 'spin 1s linear infinite';
+  var ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
+  try {
+    backupProgress(5, 'Dosyalar okunuyor...');
+    backupLog('📂 Dosya yedeği başladı...');
+    var fileData = await exportFiles();
+    var fileSize = downloadJSON(fileData, 'voicecraft-files-' + ts + '.json');
+    backupProgress(100, 'Dosya yedeği tamamlandı!');
+    backupLog('✅ İndirildi (' + formatSize(fileSize) + ')', 'ok');
+
+    localStorage.setItem('lastBackup', JSON.stringify({ date: new Date().toISOString(), fileSize: fileSize }));
+    updateBackupInfo();
+  } catch(e) {
+    backupLog('❌ Hata: ' + e.message, 'error');
+  }
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function updateBackupInfo() {
+  var last = localStorage.getItem('lastBackup');
+  if (last) {
+    try {
+      var info = JSON.parse(last);
+      var d = new Date(info.date);
+      document.getElementById('backup-last').textContent = d.toLocaleDateString('tr');
+      var sizes = [];
+      if (info.dbSize) sizes.push('DB: ' + formatSize(info.dbSize));
+      if (info.fileSize) sizes.push('Dosya: ' + formatSize(info.fileSize));
+      document.getElementById('backup-last-size').textContent = sizes.join(' | ') || '';
+    } catch(e) {}
+  }
+
+  // Dosya sayısını güncelle
+  document.getElementById('backup-file-count').textContent = listProjectFiles().length;
+  document.getElementById('backup-time').textContent = new Date().toLocaleTimeString('tr');
+}
+
+// Yedek paneli açıldığında bilgileri güncelle
+updateBackupInfo();
+</script>
+</body>
+</html>

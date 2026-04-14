@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoiceCraft AI — Medya Editörü</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- Guncelleme bildirimi -->
+<div id="update-bar" style="display:none;background:linear-gradient(90deg,#1e3a5f,#14532d);border-bottom:2px solid #22c55e;padding:8px 16px;font-size:12px;color:#4ade80;position:relative;z-index:10000">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span id="update-bar-text">Guncelleme mevcut</span>
+    <button id="update-bar-btn" onclick="applyUpdate()" style="padding:4px 14px;background:#22c55e;border:none;color:#0f172a;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">Guncelle</button>
+    <button onclick="document.getElementById('update-bar').style.display='none'" style="padding:4px 10px;background:transparent;border:1px solid #334155;color:#64748b;border-radius:4px;cursor:pointer;font-size:10px">Kapat</button>
+    <span id="update-bar-progress" style="display:none;color:#fbbf24"></span>
+  </div>
+</div>
+<div id="app">
+
+  <!-- Gizli elementler — JS referansları için -->
+  <div style="display:none">
+    <button id="btn-open-menu"></button>
+    <div id="open-menu">
+      <label for="file-input" id="open-menu-file"></label>
+      <div id="open-menu-recent"></div>
+    </div>
+    <button id="btn-skip-start"></button>
+    <button id="btn-rewind"></button>
+    <button id="btn-play"></button>
+    <button id="btn-stop"></button>
+    <button id="btn-ffwd"></button>
+    <button id="btn-record"></button>
+    <button id="btn-loop"></button>
+    <button id="btn-audio-setup"></button>
+    <div id="vu-area">
+      <div class="vu-row"><div class="vu-track"><div class="vu-fill" id="vu-l-fill"></div></div></div>
+      <div class="vu-row"><div class="vu-track"><div class="vu-fill" id="vu-r-fill"></div></div></div>
+    </div>
+    <button id="btn-analyze"></button>
+    <button id="btn-noise-gate"></button>
+    <button id="btn-clean-download"></button>
+  </div>
+
+  <!-- ══ 3. Main ══════════════════════════════════════════════════════════════ -->
+  <div id="main">
+
+    <!-- ── Modül Sekmeleri (Ses / Video) ── -->
+    <div id="module-tabs">
+      <button class="module-tab active" id="module-tab-ses" onclick="switchModule('ses')">🎵 Ses</button>
+      <button class="module-tab" id="module-tab-video" onclick="switchModule('video')">🎬 Video</button>
+    </div>
+
+    <!-- ══ SES MODÜLÜ ══ -->
+    <div id="module-ses" class="module-content">
+
+    <!-- Track Area -->
+    <div id="track-area">
+
+      <!-- Sekme başlıkları -->
+      <div id="track-tabs" style="display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border);background:var(--bg-dark);padding:0 8px;flex-shrink:0;min-height:38px;">
+
+        <!-- SOL GRUP: Proje işlemleri -->
+        <div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;">
+          <label for="file-input" title="Ses dosyası aç (Ctrl+O)"
+            style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:#1e3a6e;border:1px solid #3b82f6;color:#93c5fd;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;user-select:none;"
+            onmouseenter="this.style.background='#1e40af'" onmouseleave="this.style.background='#1e3a6e'">📂 Aç</label>
+          <input type="file" id="file-input" accept="audio/*,video/*" style="display:none">
+
+          <button id="btn-new-project" title="Yeni proje oluştur"
+            style="padding:4px 10px;background:#0f2a1a;border:1px solid #22c55e;color:#4ade80;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;"
+            onmouseenter="this.style.background='#14532d'" onmouseleave="this.style.background='#0f2a1a'">🆕 Yeni</button>
+
+          <button id="btn-old-projects" title="Kayıtlı projeleri göster"
+            style="padding:4px 10px;background:#1a1030;border:1px solid #a78bfa;color:#a78bfa;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;"
+            onmouseenter="this.style.background='#2e1065'" onmouseleave="this.style.background='#1a1030'">📋 Projeler</button>
+        </div>
+
+        <!-- ORTA: Proje adı -->
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;max-width:320px;margin-right:8px;">
+          <input id="project-name-input" type="text" placeholder="Proje adı..."
+            style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:4px 9px;outline:none;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          <button id="btn-save-project" title="Kaydet (Ctrl+S)"
+            style="display:none;padding:4px 9px;flex-shrink:0;background:var(--bg);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;cursor:pointer;font-size:12px;white-space:nowrap;"
+            onmouseenter="this.style.background='var(--bg-light)'" onmouseleave="this.style.background='var(--bg)'">💾 Kaydet</button>
+        </div>
+
+        <!-- SAĞ GRUP: Sekme butonları -->
+        <div style="display:flex;align-items:center;gap:0;margin-left:auto;flex-shrink:0;">
+          <button class="track-tab active" id="tab-ai-btn"       onclick="switchTrackTab('ai')">✦ AI Analiz</button>
+          <button class="track-tab"        id="tab-tr-main-btn"  onclick="switchTrackTab('tr-main')">📝 Transkript</button>
+        </div>
+
+      </div>
+
+
+      <!-- Ana içerik — her zaman görünür -->
+      <div id="track-tab-gate" style="display:flex;flex:1;overflow:hidden;min-height:0;position:relative">
+        <div id="ng-host" style="width:100%;height:100%;overflow-y:auto;padding:8px;box-sizing:border-box;background:var(--bg-dark)">
+          <div style="text-align:center;color:var(--text-dim);padding:40px;font-size:13px">
+            Ses dosyası yüklendiğinde Eşik paneli burada açılacak.
+          </div>
+        </div>
+      </div>
+
+      <!-- Transkript sekmesi -->
+      <div id="track-tab-tr-main" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;background:var(--bg-dark)">
+        <div id="tr-main-toolbar" style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap">
+          <button id="tr-main-play-btn" style="display:none;font-size:11px;padding:3px 10px;background:rgba(56,189,248,0.15);border:1px solid #38bdf8;border-radius:4px;color:#38bdf8;cursor:pointer">▶ Oynat</button>
+          <button id="tr-main-clean-play-btn" style="display:none;font-size:11px;padding:3px 10px;background:rgba(74,222,128,0.15);border:1px solid #4ade80;border-radius:4px;color:#4ade80;cursor:pointer">▶ Temizlenmiş Dinle</button>
+          <span style="flex:1"></span>
+          <span id="tr-main-count" style="font-size:10px;color:var(--text-dim)">Transkript yok</span>
+          <button id="tr-main-delete-btn" style="display:none;font-size:11px;padding:3px 10px;background:rgba(239,68,68,0.15);border:1px solid #ef4444;border-radius:4px;color:#ef4444;cursor:pointer">🗑 Seçilileri Sil (<span id="tr-main-sel-count">0</span>)</button>
+          <button id="tr-main-selectall-btn" style="display:none;font-size:10px;padding:2px 8px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--text-dim);cursor:pointer">Tümünü Seç</button>
+        </div>
+        <div id="tr-main-body" style="overflow-y:auto;flex:1;padding:6px 10px">
+          <div id="tr-main-placeholder" style="padding:40px;text-align:center;color:var(--text-dim);font-size:12px">
+            📝 Whisper transkripsiyon tamamlandığında burada görünecek.
+          </div>
+          <div id="tr-main-list"></div>
+        </div>
+      </div>
+
+      <!-- AI Analiz sekmesi (3. sekme) -->
+      <div id="track-tab-ai" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
+        <div id="ai-panel">
+          <div id="ai-panel-header">
+            <span class="ai-logo">✦</span>
+            <span class="ai-panel-title">Ollama AI Analizi</span>
+            <span id="ai-status-badge">Hazır</span>
+          </div>
+
+          <div id="ai-tabs">
+            <button class="ai-tab active" data-tab="analysis">Özet</button>
+            <button class="ai-tab" data-tab="events">Olaylar</button>
+            <button class="ai-tab" data-tab="transcript" id="tab-transcript-btn">Transkript</button>
+            <button class="ai-tab" data-tab="command">Komut</button>
+            <button class="ai-tab" data-tab="logs" id="tab-logs-btn">Loglar</button>
+          </div>
+
+          <!-- ── Summary tab ─────────────────────────────────────────────── -->
+          <div class="ai-panel-body active" id="tab-analysis">
+            <div id="analysis-placeholder">
+              <span class="ph-icon">📊</span>
+              <strong style="color:var(--text)">🤖 Analiz Et</strong> butonuna tıklayın<br>
+              sesinizi AI ile analiz etmek için.<br><br>
+              <span style="font-size:10px">Ollama · llama3.1:8b · Yerel Analiz</span>
+            </div>
+            <div id="analysis-cards" style="display:none"></div>
+          </div>
+
+          <!-- ── Events tab ──────────────────────────────────────────────── -->
+          <div class="ai-panel-body" id="tab-events">
+            <div id="no-events-msg" style="padding:20px;text-align:center;color:var(--text-dim);font-size:12px">
+              Henüz olay tespit edilmedi.
+            </div>
+            <div id="events-list"></div>
+          </div>
+
+          <!-- ── Logs tab ────────────────────────────────────────────────── -->
+          <div class="ai-panel-body" id="tab-logs">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-bottom:1px solid var(--border)">
+              <span style="font-size:10px;color:var(--text-dim)">Sistem & Hata Logları</span>
+              <button onclick="copyLogs(this)" style="font-size:9px;padding:2px 6px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:3px;color:var(--text-dim);cursor:pointer">Kopyala</button>
+              <button onclick="clearLogs()" style="font-size:9px;padding:2px 6px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:3px;color:var(--text-dim);cursor:pointer">Temizle</button>
+            </div>
+            <div id="log-list" style="padding:4px 0;font-family:monospace;font-size:10px;overflow-y:auto;max-height:100%"></div>
+          </div>
+
+          <!-- ── Transcript tab ─────────────────────────────────────────── -->
+          <div class="ai-panel-body" id="tab-transcript">
+            <div id="transcript-toolbar" style="display:flex;align-items:center;gap:5px;padding:5px 8px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+              <select id="whisper-model-select" style="font-size:10px;background:var(--bg-mid);border:1px solid var(--border);border-radius:3px;color:var(--text);padding:2px 4px">
+                <option value="tiny">Tiny</option>
+                <option value="base">Base</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large" selected>Large</option>
+              </select>
+              <button id="btn-transcribe" class="tbtn" style="width:auto;padding:0 8px;font-size:10px" disabled>🎙 Transkribe Et</button>
+              <button id="btn-retranscribe" class="tbtn" style="width:auto;padding:0 7px;font-size:10px;background:transparent;border-color:#334155;color:#64748b" disabled title="Arşivdeki transkripti sil ve yeniden transkribe et">🔄 Yeniden</button>
+              <div style="height:14px;width:1px;background:var(--border);flex-shrink:0"></div>
+              <button class="tv-btn active" id="tv-segments" style="font-size:10px;padding:2px 7px;border:1px solid #1e293b;border-radius:3px;background:#1e293b;color:#94a3b8;cursor:pointer">Segmentler</button>
+              <button class="tv-btn" id="tv-words" style="font-size:10px;padding:2px 7px;border:1px solid #1e293b;border-radius:3px;background:transparent;color:#64748b;cursor:pointer">Kelimeler</button>
+              <button class="tv-btn" id="tv-text" style="font-size:10px;padding:2px 7px;border:1px solid #1e293b;border-radius:3px;background:transparent;color:#64748b;cursor:pointer">Metin</button>
+              <button id="btn-cut-selected" style="display:none;font-size:10px;padding:2px 8px;border:1px solid #ef4444;border-radius:3px;background:rgba(239,68,68,0.1);color:#ef4444;cursor:pointer" disabled>✂️ Seçili Sözcükleri Kes <span id="cut-sel-count"></span></button>
+              <span id="transcript-status" style="font-size:9px;color:var(--text-dim);flex:1;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Ses dosyası bekleniyor</span>
+            </div>
+            <div id="transcript-progress" style="display:none;padding:8px;border-bottom:1px solid var(--border)">
+              <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px" id="transcript-progress-label">Whisper çalışıyor...</div>
+              <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+                <div id="transcript-progress-bar" style="height:100%;width:0%;background:var(--accent);border-radius:2px;transition:width 0.5s"></div>
+              </div>
+            </div>
+            <div id="transcript-stats" style="display:none;padding:6px 8px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text-dim)"></div>
+            <div id="transcript-body" style="padding:6px 8px;font-size:11px;line-height:1.6;overflow-y:auto;flex:1;color:var(--text)">
+              <div id="transcript-placeholder" style="padding:20px;text-align:center;color:var(--text-dim);font-size:11px">
+                🎙 Whisper large ile tam metin transkripsiyon.<br>
+                <span style="font-size:9px">CPU'da büyük dosyalar uzun sürebilir.</span>
+              </div>
+              <div id="transcript-segments"></div>
+            </div>
+          </div>
+
+          <!-- ── Command tab ─────────────────────────────────────────────── -->
+          <div class="ai-panel-body" id="tab-command">
+            <div class="cmd-section-label">Hızlı İşlemler</div>
+            <div class="quick-grid">
+              <button class="qbtn" data-cmd="Delete all sneeze and cough sounds">
+                <span class="qi">🤧</span><span class="ql"><span class="qnum">1</span> Hapşırık / Öksürük Sil</span><span class="qd">Ani biyolojik gürültüleri sil</span>
+              </button>
+              <button class="qbtn" data-cmd="Delete all keyboard clicks, mouse clicks and mechanical sounds">
+                <span class="qi">⌨️</span><span class="ql"><span class="qnum">2</span> Tıklama Sil</span><span class="qd">Klavye / fare / mekanik sesleri sil</span>
+              </button>
+              <button class="qbtn" data-cmd="Attenuate background ambient noise and fan noise by 20dB">
+                <span class="qi">🔇</span><span class="ql"><span class="qnum">3</span> Ortam Gürültüsü Azalt</span><span class="qd">Fan / klima / sürekli arka planı azalt</span>
+              </button>
+              <button class="qbtn" data-cmd="Trim all silence gaps longer than 1 second to 0.3 seconds">
+                <span class="qi">✂️</span><span class="ql"><span class="qnum">4</span> Sessizlik Kırp</span><span class="qd">1s+ sessizlikleri 0.3s'ye sıkıştır</span>
+              </button>
+              <button class="qbtn" data-cmd="Keep only the speaker voice, delete all other detected events">
+                <span class="qi">🎙</span><span class="ql"><span class="qnum">5</span> Sadece Konuşmacı</span><span class="qd">Diğer tüm sesleri sil, sesi izole et</span>
+              </button>
+              <button class="qbtn" data-cmd="Apply full professional cleanup: remove all noise types, trim silences, apply recommended normalization">
+                <span class="qi">⚡</span><span class="ql"><span class="qnum">6</span> Tam Temizlik</span><span class="qd">1→5 adımları otomatik uygula</span>
+              </button>
+            </div>
+            <div class="cmd-section-label">Özel AI Komutu</div>
+            <textarea id="cmd-textarea" placeholder="Komut yazın ve Enter'a basın...
+
+Örnekler:
+• 0:30 sonrasındaki tüm öksürükleri sil
+• Müziği 30dB azalt
+• 2 saniyeden uzun sessizlikleri sil
+• Podcast yayını için temizle
+(Shift+Enter yeni satır ekler)"></textarea>
+            <button id="btn-send-cmd" style="display:none" disabled></button>
+            <div id="cmd-result"></div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /module-ses -->
+
+  <!-- ══ VİDEO MODÜLÜ ══ -->
+  <div id="module-video" class="module-content" style="display:none">
+    <div id="video-area">
+
+      <!-- Video üst bar -->
+      <div id="video-top-bar" style="display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border);background:var(--bg-dark);padding:0 8px;flex-shrink:0;min-height:38px;">
+
+        <!-- Sol: Dosya aç -->
+        <div style="display:flex;align-items:center;gap:4px;margin-right:8px;flex-shrink:0;">
+          <label for="video-file-input" title="Video dosyası aç"
+            style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:#1e3a6e;border:1px solid #3b82f6;color:#93c5fd;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;user-select:none;"
+            onmouseenter="this.style.background='#1e40af'" onmouseleave="this.style.background='#1e3a6e'">🎬 Video Aç</label>
+          <input type="file" id="video-file-input" accept="video/*" style="display:none">
+        </div>
+
+        <!-- Orta: Dosya adı + durum -->
+        <span id="video-file-name" style="font-size:12px;color:var(--text-dim);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+
+        <!-- Sağ: Alt sekmeler -->
+        <div style="display:flex;align-items:center;gap:0;margin-left:auto;flex-shrink:0;">
+          <button class="track-tab active" id="vtab-preview-btn" onclick="switchVideoTab('preview')">🎬 Önizleme</button>
+          <button class="track-tab" id="vtab-audio-btn" onclick="switchVideoTab('audio')">🎵 Ses İşleme</button>
+          <button class="track-tab" id="vtab-ai-btn" onclick="switchVideoTab('ai')">✦ AI Analiz</button>
+          <button class="track-tab" id="vtab-subtitle-btn" onclick="switchVideoTab('subtitle')">📝 Altyazı</button>
+        </div>
+      </div>
+
+      <!-- ── Önizleme Sekmesi ── -->
+      <div id="vtab-preview" style="display:flex;flex:1;overflow:hidden;min-height:0">
+
+        <!-- Sol: Video oynatıcı -->
+        <div id="video-player-wrap" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0a0e1a;min-width:0;padding:16px;position:relative">
+          <div id="video-placeholder" style="text-align:center;color:var(--text-dim)">
+            <div style="font-size:64px;margin-bottom:16px;opacity:0.4">🎬</div>
+            <div style="font-size:14px;margin-bottom:6px">Video dosyası yükleyin</div>
+            <div style="font-size:11px;color:#475569">MP4, WebM, MOV desteklenir</div>
+          </div>
+          <video id="video-player" style="display:none;max-width:100%;max-height:100%;border-radius:8px" controls></video>
+        </div>
+
+        <!-- Sağ: Video bilgi paneli -->
+        <div id="video-info-panel" style="width:300px;flex-shrink:0;border-left:1px solid var(--border);background:var(--bg-dark);overflow-y:auto;padding:12px;display:none">
+          <h4 style="font-size:13px;color:var(--text);margin-bottom:12px">📋 Video Bilgileri</h4>
+          <div id="video-meta" style="font-size:11px;color:var(--text-dim);line-height:1.8"></div>
+
+          <h4 style="font-size:13px;color:var(--text);margin:16px 0 8px">🎵 Ses Bilgileri</h4>
+          <div id="video-audio-meta" style="font-size:11px;color:var(--text-dim);line-height:1.8"></div>
+
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:6px">
+            <button id="btn-video-extract-audio"
+              style="padding:8px 14px;background:rgba(74,222,128,0.12);border:1px solid #22c55e;color:#4ade80;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600"
+              onclick="switchVideoTab('audio');">
+              🎵 Ses İşleme Ayarları
+            </button>
+            <button id="btn-video-screenshot" disabled
+              style="padding:6px 12px;background:rgba(56,189,248,0.1);border:1px solid #38bdf8;color:#38bdf8;border-radius:6px;cursor:pointer;font-size:11px"
+              onclick="videoScreenshot()">
+              📸 Ekran Görüntüsü Al
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Ses İşleme Sekmesi ── -->
+      <div id="vtab-audio" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;background:var(--bg-dark)">
+        <div id="video-audio-status" style="padding:8px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <span id="video-audio-status-dot" style="width:10px;height:10px;border-radius:50%;background:#334155;flex-shrink:0"></span>
+          <span id="video-audio-status-text" style="font-size:12px;color:var(--text-dim)">Video yüklendiğinde ses çıkarılacak</span>
+        </div>
+
+        <!-- Pipeline adım seçimi + başlat butonu -->
+        <div style="padding:12px;border-bottom:1px solid var(--border);flex-shrink:0">
+          <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Pipeline Adımları</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:11px">
+            <label style="display:flex;align-items:center;gap:6px;color:var(--text-dim);cursor:pointer">
+              <input type="checkbox" id="vp-chk-whisper" checked> 1. Whisper (Transkript)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;color:var(--text-dim);cursor:pointer">
+              <input type="checkbox" id="vp-chk-demucs" checked> 2. Demucs (Vokal İzolasyon)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;color:var(--text-dim);cursor:pointer">
+              <input type="checkbox" id="vp-chk-nr" checked> 3. NoiseReduce (Gürültü Bastırma)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;color:var(--text-dim);cursor:pointer">
+              <input type="checkbox" id="vp-chk-dns64" checked> 4. DNS64 (Anlık Gürültü)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;color:var(--text-dim);cursor:pointer">
+              <input type="checkbox" id="vp-chk-speechonly" checked> 5. SpeechOnly (Konuşma Dışı Temizle)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;color:var(--text-dim);cursor:pointer">
+              <input type="checkbox" id="vp-chk-normalize" checked> 6. Ses Dengeleme (Normalize)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;color:var(--text-dim);cursor:pointer">
+              <input type="checkbox" id="vp-chk-deepfilter" checked> 7. DeepFilterNet (Derin Filtreleme)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;color:var(--text-dim);cursor:pointer">
+              <input type="checkbox" id="vp-chk-vad" checked> 8. VAD (Sessizlik Haritası)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;color:var(--text-dim);cursor:pointer">
+              <input type="checkbox" id="vp-chk-diarize" checked> 9. Diarize (Konuşmacı Tespiti)
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;color:var(--text-dim);cursor:pointer">
+              <input type="checkbox" id="vp-chk-cut" checked> 10. Kesim Haritası
+            </label>
+          </div>
+          <!-- Başlat butonu — adımların altında -->
+          <div style="margin-top:12px;text-align:center">
+            <button id="btn-video-start-pipeline" disabled
+              style="padding:10px 28px;background:linear-gradient(135deg,#1e3a5f,#14532d);border:1px solid #22c55e;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700"
+              onclick="videoStartPipeline()">
+              ⚡ Sesi Çıkar ve Pipeline Başlat
+            </button>
+          </div>
+        </div>
+
+        <!-- Kesim bilgi ve indirme alanı -->
+        <div id="video-cut-area" style="padding:12px;border-bottom:1px solid var(--border);display:none;flex-shrink:0">
+          <!-- Başlık + durum -->
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">✂️ Video Kesim</div>
+          <div id="video-cut-status" style="font-size:11px;color:var(--text-dim);margin-bottom:8px">Pipeline tamamlandığında kesim bilgisi burada görünecek</div>
+          <!-- Kesim haritası önizleme -->
+          <div id="video-cut-preview" style="margin-bottom:12px"></div>
+          <!-- Butonlar — alt satırda, ortada -->
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap">
+            <button id="btn-video-cut-download" disabled
+              style="padding:10px 24px;background:linear-gradient(135deg,#7c3aed,#2563eb);border:1px solid #818cf8;color:#fff;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;white-space:nowrap"
+              onclick="videoCutAndDownload()">
+              🎬 Kesilmiş Videoyu İndir
+            </button>
+            <button id="btn-video-dl-audio-only"
+              style="display:none;padding:10px 20px;background:rgba(74,222,128,0.12);border:1px solid #22c55e;color:#4ade80;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap"
+              onclick="videoDownloadCleanAudio()">
+              🎵 Temiz Sesi İndir
+            </button>
+          </div>
+        </div>
+
+        <!-- Pipeline log -->
+        <div style="flex:1;overflow-y:auto;padding:12px">
+          <div id="video-pipeline-steps" style="display:flex;flex-direction:column;gap:4px"></div>
+          <div id="video-pipeline-log" style="margin-top:12px;font-family:monospace;font-size:10px;color:var(--text-dim);max-height:300px;overflow-y:auto"></div>
+
+          <!-- Adım açıklamaları -->
+          <div style="margin-top:16px;padding:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px">
+            <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">📋 Pipeline Akışı (Video)</div>
+            <div style="font-size:11px;color:var(--text-dim);line-height:1.8">
+              1. Video → Ses çıkarma (Web Audio API)<br>
+              2. Ses pipeline çalışır (Whisper, Demucs, NoiseReduce, vs.)<br>
+              3. Kesim haritası oluşturulur (VAD + Diarize)<br>
+              4. <b>Aynı kesim haritası videoya uygulanır</b><br>
+              5. Temiz ses + kesilmiş video indirilir
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── AI Analiz Sekmesi ── -->
+      <div id="vtab-ai" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;background:var(--bg-dark)">
+        <div style="padding:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span class="ai-logo" style="font-size:16px">✦</span>
+          <span style="font-size:13px;font-weight:600;color:var(--text)">Claude Vision Analizi</span>
+          <span style="flex:1"></span>
+          <button id="btn-video-ai-analyze" disabled
+            style="padding:6px 16px;background:rgba(168,85,247,0.15);border:1px solid #a855f7;color:#c084fc;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600"
+            onclick="videoAIAnalyze()">
+            ✦ Sahne Analizi Başlat
+          </button>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:12px">
+          <div id="video-ai-placeholder" style="text-align:center;padding:40px;color:var(--text-dim);font-size:12px">
+            <div style="font-size:32px;margin-bottom:12px;opacity:0.5">✦</div>
+            Video yükleyin ve <b>Sahne Analizi Başlat</b>'a tıklayın.<br>
+            <span style="font-size:10px;color:#475569">Claude Vision ile sahne tespiti, içerik analizi ve olay tanıma yapılır.</span>
+          </div>
+          <div id="video-ai-results" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- ── Altyazı Sekmesi ── -->
+      <div id="vtab-subtitle" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;background:var(--bg-dark)">
+        <div style="padding:12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap">
+          <span style="font-size:13px;font-weight:600;color:var(--text)">📝 Altyazı Oluşturucu</span>
+          <span style="flex:1"></span>
+          <button id="btn-video-gen-srt" disabled
+            style="padding:6px 14px;background:rgba(251,191,36,0.12);border:1px solid #fbbf24;color:#fbbf24;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600"
+            onclick="videoGenerateSRT()">
+            🎙 Transkriptten SRT Oluştur
+          </button>
+          <button id="btn-video-download-srt" disabled
+            style="padding:6px 14px;background:rgba(74,222,128,0.12);border:1px solid #22c55e;color:#4ade80;border-radius:6px;cursor:pointer;font-size:11px"
+            onclick="videoDownloadSRT()">
+            ⬇ SRT İndir
+          </button>
+        </div>
+
+        <div style="flex:1;overflow-y:auto;padding:12px">
+          <div id="video-srt-placeholder" style="text-align:center;padding:40px;color:var(--text-dim);font-size:12px">
+            <div style="font-size:32px;margin-bottom:12px;opacity:0.5">📝</div>
+            Önce <b>Ses İşleme</b> sekmesinden Whisper transkript adımını çalıştırın,<br>
+            ardından buradan SRT altyazı dosyası oluşturabilirsiniz.
+          </div>
+          <div id="video-srt-preview" style="display:none;font-family:monospace;font-size:11px;line-height:1.8;color:var(--text)"></div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /module-video -->
+
+  </div><!-- /main -->
+
+  <!-- gizli elementler (JS referansları için) -->
+  <span id="info-file" style="display:none"></span>
+  <span id="info-meta" style="display:none"></span>
+  <div id="status-bar" style="display:none">
+    <div class="status-dot waiting" id="status-dot"></div>
+    <span id="status-main"></span>
+    <div id="status-extra"></div>
+  </div>
+
+</div>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="ld-text" id="ld-text">İşleniyor...</div>
+  <div class="ld-sub"  id="ld-sub">Lütfen bekleyin</div>
+  <div id="ld-progress-wrap">
+    <div id="ld-progress-bar"></div>
+  </div>
+  <div id="ld-percent">0%</div>
+</div>
+
+<!-- Drag overlay -->
+<div id="drag-overlay">
+  <div class="drag-msg">Ses dosyasını buraya bırakın 🎵</div>
+</div>
+
+<!-- ── Floating Log Panel ─────────────────────────────────────────────────── -->
+<div id="float-log-wrap" style="
+  position:fixed;bottom:0;right:0;width:420px;max-width:95vw;z-index:9999;
+  display:flex;flex-direction:column;font-family:monospace;font-size:10px;
+  pointer-events:none;
+">
+  <!-- Toggle bar -->
+  <div id="float-log-bar" style="
+    display:flex;align-items:center;gap:8px;padding:4px 10px;
+    background:#0d1b2a;border-top:2px solid #1e293b;border-left:2px solid #1e293b;
+    cursor:pointer;pointer-events:all;user-select:none;
+  " onclick="floatLogToggle()">
+    <span id="float-log-indicator" style="width:8px;height:8px;border-radius:50%;background:#334155;flex-shrink:0"></span>
+    <span id="float-log-title" style="color:#64748b;flex:1;font-size:10px">Loglar</span>
+    <span id="float-log-count" style="color:#64748b;font-size:9px"></span>
+    <button onclick="event.stopPropagation();floatLogCopyAll()" style="background:transparent;border:none;color:#334155;cursor:pointer;font-size:9px;padding:0 2px" id="float-log-copy-all">Kopyala</button>
+    <button onclick="event.stopPropagation();floatLogClear()" style="background:transparent;border:none;color:#334155;cursor:pointer;font-size:9px;padding:0 2px">Temizle</button>
+    <span id="float-log-arrow" style="color:#475569;font-size:10px">▲</span>
+  </div>
+  <!-- Log list -->
+  <div id="float-log-list" style="
+    display:none;max-height:220px;overflow-y:auto;
+    background:#070d1a;border-left:2px solid #1e293b;
+    pointer-events:all;
+  "></div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="project-manager.js"></script>
+<script src="canvas-overlay.js"></script>
+<script src="app.js"></script>
+<script>
+window.floatLogToggle = function() {
+  const list  = document.getElementById('float-log-list');
+  const arrow = document.getElementById('float-log-arrow');
+  const open  = list.style.display !== 'none' && list.style.display !== '';
+  list.style.display  = open ? 'none' : 'block';
+  arrow.textContent   = open ? '▲' : '▼';
+  if (!open) list.scrollTop = list.scrollHeight;
+};
+window.floatLogCopyAll = function() {
+  const rows = document.querySelectorAll('#float-log-list > div');
+  const lines = Array.from(rows).map(r => r.innerText.replace(/\n+/g, ' ').trim()).join('\n');
+  const btn = document.getElementById('float-log-copy-all');
+  navigator.clipboard.writeText(lines).then(() => {
+    if (btn) { btn.textContent='✔'; setTimeout(() => btn.textContent='Kopyala', 1500); }
+  }).catch(() => {
+    if (btn) { btn.textContent='✗'; setTimeout(() => btn.textContent='Kopyala', 1500); }
+  });
+};
+window.floatLogClear = function() {
+  document.getElementById('float-log-list').innerHTML = '';
+  const ind  = document.getElementById('float-log-indicator');
+  const title= document.getElementById('float-log-title');
+  if (ind)   ind.style.background = '#334155';
+  if (title){ title.style.color='#64748b'; title.textContent='Loglar'; }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+# Secrets
+.env
+.env.local
+*.key
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+voicecraft/
+
+# Node
+node_modules/
+package-lock.json
+
+# Build artifacts
+installer/dist/*.zip
+installer/dist/Synergy-Kendiyas-Fabric/
+installer/dist/VoiceCraft-AI/
+installer/build/
+
+# Audio/video dataset
+uploads/
+yedek/
+voicecraft/
+*.wav
+*.mp3
+*.mp4
+*.m4a
+
+# Binaries
+*.exe
+*.dll
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Claude
+.claude/settings.local.json
+
+# Logs
+*.log
+server.log
+
+# Deepfilter binary dumps
+installer/dist/deepfilterlib_*.zip

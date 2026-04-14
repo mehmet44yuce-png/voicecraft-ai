@@ -1,0 +1,435 @@
+================================================================================
+  VoiceCraft AI — Proje Notları & Windows Kurulum Rehberi
+  Hazırlanma tarihi: 19 Mart 2026
+  Bu dosyayı yeni bilgisayardaki Claude'a okutarak kuruluma devam edebilirsiniz.
+================================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. PROJE NEDİR?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+VoiceCraft AI, tarayıcı tabanlı bir ses editörüdür. Audacity'ye benzer bir
+arayüze sahiptir. Özelliği şudur: yüklenen ses dosyasını üç farklı yapay zeka
+katmanıyla analiz eder ve düzenler.
+
+Kullanım amacı:
+  - Podcast / röportaj / ders kaydı temizleme
+  - Hapşırık, öksürük, klavye sesi, tıklama gibi gürültüleri tespit etme
+  - Uzun sessizlikleri otomatik kırpma
+  - Konuşmacı sesini izole etme
+  - Transkripsiyon (konuşmayı yazıya çevirme)
+  - Doğal dil komutlarıyla ses düzenleme
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  2. DOSYA YAPISI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+AI Audi/
+├── server.py            → Flask backend (Python) — tüm AI işlemleri burada
+├── requirements.txt     → Python bağımlılıkları
+├── PROJE_NOTLARI.txt    → Bu dosya
+└── public/
+    ├── index.html       → Ana arayüz (Audacity tarzı)
+    ├── style.css        → Karanlık tema stilleri
+    └── app.js           → Web Audio API, waveform, tüm frontend mantığı
+
+Kod boyutları (Mart 2026 itibarıyla):
+  server.py   → 837 satır
+  app.js      → 1761 satır
+  style.css   → 863 satır
+  index.html  → 355 satır
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  3. MİMARİ — NASIL ÇALIŞIR?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Kullanıcı ses dosyası yüklediğinde şu sıra işler:
+
+  ADIM 1 — Tarayıcı (Web Audio API)
+    Ses dosyası tarayıcıda decode edilir.
+    Her 100ms'de bir peak amplitude hesaplanır.
+    Her 200ms'de bir RMS (dBFS) hesaplanır.
+    Sessizlik periyotları tespit edilir.
+    Frekans bandları (düşük/orta/yüksek) analiz edilir.
+    Bu veriler sunucuya gönderilir (~600KB JSON).
+    NOT: Ham ses dosyası (MP3/M4A/WAV) sunucuya GİTMEZ, sadece sayısal özellikler gider.
+
+  ADIM 2 — Python Analizi (server.py → python_analyze)
+    Gelen amplitude verilerinden spike tespiti yapılır.
+    Spike süresine göre tür tahmini:
+      < 80ms  → klavye sesi
+      < 300ms → darbe/tıklama
+      < 600ms → öksürük
+      > 600ms → hapşırık/nefes
+    Konuşmacı segmentleri oluşturulur.
+    Sessizlik listesi, kesim listesi, kalite skoru hesaplanır.
+    Bu adım < 1 saniyede tamamlanır.
+
+  ADIM 3 — Ollama Zenginleştirme (server.py → ollama_enrich)
+    Python analiz özeti (~500 byte) Ollama'ya gönderilir.
+    Ollama şunları üretir:
+      - Senaryo tespiti (podcast, röportaj, ders, vb.)
+      - Öncelik aksiyonları (Türkçe)
+      - EQ önerileri
+      - Mikrofon türü tahmini
+      - Kayıt ortamı değerlendirmesi
+    Bu adım ~15-30 saniye sürer.
+    BAŞARISIZ OLURSA: Python sonucu kullanılmaya devam eder.
+
+  ADIM 4 — Whisper Transkripsiyon (arka planda, isteğe bağlı)
+    Kullanıcı "Transkript" sekmesinden başlatır.
+    Ham ses dosyası /api/transcribe/start endpoint'ine gönderilir.
+    Sunucu geçici dosyaya kaydeder, Whisper modelini çalıştırır.
+    İşlem arka planda (thread) çalışır, UI bloklanmaz.
+    3 saniyede bir /api/transcribe/status/<job_id> sorgulanır.
+    Tamamlanınca:
+      - Timestamp'li segment listesi gösterilir
+      - Her segmente tıklayınca o noktaya atlanır
+      - Ollama transkript verileriyle yeniden zenginleştirir
+
+  ADIM 5 — Doğal Dil Komutları (Komut sekmesi)
+    Kullanıcı "Tüm öksürükleri sil" gibi bir komut yazar.
+    Komut + önceki analiz JSON'u Ollama'ya gönderilir.
+    Ollama hangi zaman aralıklarının etkileneceğini JSON olarak döner.
+    Sonuç waveform üzerine çizilir (kırmızı=sil, sarı=azalt).
+
+API Endpoint Listesi:
+  GET  /                           → index.html
+  POST /api/analyze/python         → Hızlı Python analizi
+  POST /api/analyze/enrich         → Ollama zenginleştirme
+  POST /api/analyze                → Her ikisi birden (tek seferde)
+  POST /api/transcribe/start       → Whisper transkripsiyon başlat
+  GET  /api/transcribe/status/<id> → İş durumu sorgula
+  GET  /api/transcribe/models      → Model listesi
+  POST /api/command                → Doğal dil komutu
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  4. KULLANILAN TEKNOLOJİLER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  BACKEND (Python):
+    Flask          → HTTP sunucu
+    flask-cors     → CORS başlıkları
+    json_repair    → Bozuk JSON düzeltme (Ollama bazen yarım JSON üretir)
+    openai-whisper → Konuşma tanıma (transkripsiyon)
+    torch          → Whisper'ın gerektirdiği derin öğrenme kütüphanesi
+
+  FRONTEND (Tarayıcı):
+    Web Audio API  → Ses decode etme, amplitude analizi
+    Canvas API     → Waveform çizimi (5 katman)
+    IndexedDB      → Yüklenen ham ses dosyasını tarayıcıda saklar
+                     (sayfa yenilendiğinde yeniden yükleme gerekmez)
+    Vanilla JS     → Çerçeve yok, saf JavaScript
+
+  YEREL AI MODELLERİ:
+    Ollama         → Yerel LLM sunucu (http://localhost:11434)
+    llama3.1:8b    → Analiz yorumlama ve komut işleme modeli
+    Whisper large  → OpenAI'nin konuşma tanıma modeli (~2.9GB)
+
+  NOT: Claude API veya herhangi bir bulut AI servisi KULLANILMAMAKTADIR.
+  Tüm AI işlemleri tamamen yereldir, internet bağlantısı gerektirmez.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  5. WINDOWS KURULUM ADIMLARI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ADIM A — Python Kurulumu
+    https://python.org/downloads adresinden Python 3.11 veya 3.12 indirin.
+    KURULUM SIRASINDA "Add Python to PATH" kutusunu işaretleyin.
+    Kurulumdan sonra komut isteminde kontrol edin:
+      python --version
+
+  ADIM B — FFmpeg Kurulumu (Whisper için zorunlu)
+    https://ffmpeg.org/download.html adresinden Windows build indirin.
+    Veya Chocolatey ile: choco install ffmpeg
+    Veya Winget ile:     winget install ffmpeg
+    Kurulumdan sonra kontrol edin:
+      ffmpeg -version
+
+  ADIM C — Ollama Kurulumu
+    https://ollama.com/download adresinden Windows sürümünü indirin.
+    Kurulum bittikten sonra otomatik arka planda çalışır.
+    llama3.1:8b modelini indirin (komut isteminde):
+      ollama pull llama3.1:8b
+    Kontrol edin:
+      ollama list
+    Ollama çalışıyor mu test edin:
+      curl http://localhost:11434/api/tags
+
+  ADIM D — Python Bağımlılıklarını Kurun
+    Proje klasörüne girin (komut isteminde):
+      cd "C:\...\AI Audi"
+    Bağımlılıkları kurun:
+      pip install flask flask-cors json-repair openai-whisper
+
+    UYARI: openai-whisper PyTorch'u da indirir (~2GB).
+    İnternet bağlantısı hızınıza göre 5-20 dakika sürebilir.
+
+  ADIM E — Sunucuyu Başlatın
+    Proje klasöründeyken:
+      python server.py
+    Çıktıda şunu görmelisiniz:
+      VoiceCraft AI  →  http://localhost:3000
+    Tarayıcıda açın:
+      http://localhost:3000
+
+  ADIM F — İlk Whisper Kullanımı
+    Transkript sekmesinden ilk transkripsiyon başlatıldığında
+    Whisper modeli otomatik indirilir:
+      tiny   →  75MB
+      base   →  145MB
+      small  →  461MB
+      medium → 1.4GB
+      large  → 2.9GB
+    Model indirilince bir daha indirilmez, cache'de kalır.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  6. LINUX'TA KURULUMUN FARKLILIKLARI (Mevcut bilgisayar)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Linux sistemde paketler /var/data/python dizinine kurulmuştu çünkü
+ana disk (tmpfs) küçüktü. Windows'ta bu sorun yaşanmaz, normal pip kurulumu yeterli.
+
+Linux'ta server.py başlangıcında şu satır var:
+  sys.path.insert(0, '/var/data/python')
+
+Windows'ta bu satır gerekli DEĞİLDİR çünkü pip paketleri normal
+site-packages altında olacak. Server.py'yi açıp bu satırı silin veya
+yorum satırı yapın:
+  # sys.path.insert(0, '/var/data/python')   ← bu satırı kaldırın
+
+Ayrıca Linux'ta Whisper modelleri /var/data/whisper_models altına iniyordu.
+Windows'ta model otomatik olarak kullanıcı dizinine iner:
+  C:\Users\<kullanıcı>\.cache\whisper\
+
+server.py içindeki bu satırı bulun:
+  _whisper_model = _whisper_lib.load_model(WHISPER_MODEL_NAME,
+                                           download_root='/var/data/whisper_models')
+Windows için şu şekilde değiştirin:
+  _whisper_model = _whisper_lib.load_model(WHISPER_MODEL_NAME)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  7. SUNUCU BAŞLATMA KOMUTLARI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Linux:
+    cd "/home/pardussega/Masaüstü/Projeler/AI Audi"
+    PYTHONPATH=/var/data/python python3 server.py
+
+  Windows (Komut İstemi / cmd):
+    cd "C:\...\AI Audi"
+    python server.py
+
+  Windows (PowerShell):
+    cd "C:\...\AI Audi"
+    python server.py
+
+  Port değiştirmek isterseniz:
+    PORT=8080 python server.py          (Linux)
+    set PORT=8080 && python server.py   (Windows cmd)
+
+  Varsayılan port: 3000
+  Tarayıcı adresi: http://localhost:3000
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  8. ÖNEMLI PERFORMANS BİLGİLERİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Analiz (Python + Ollama):
+    Büyük bir ses dosyası için toplam ~30-60 saniye.
+    Python kısmı < 1 saniye, Ollama ~15-30 saniye.
+
+  Whisper Transkripsiyon (CPU, tahmini süreler):
+    Model     | 30 dk ses | 1 saat ses | 2.5 saat ses
+    ----------|-----------|------------|-------------
+    tiny      |  ~1 dk    |   ~2 dk    |   ~5 dk
+    base      |  ~2 dk    |   ~5 dk    |   ~12 dk
+    small     |  ~6 dk    |   ~12 dk   |   ~30 dk
+    medium    |  ~18 dk   |   ~36 dk   |   ~90 dk
+    large     |  ~45 dk   |   ~90 dk   |   ~3-4 saat
+
+  GPU varsa (NVIDIA CUDA):
+    Whisper GPU'da 5-10 kat daha hızlı çalışır.
+    CUDA kurulumu gerektirir:
+      pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+  Tavsiye: Günlük kullanım için "small" veya "medium" model yeterli.
+  Maksimum doğruluk gereken durumlarda "large" kullanın.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  9. YAPILAN GELİŞTİRMELER (Kronolojik sıra)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. Temel proje oluşturuldu (Flask + Vanilla JS + Web Audio API)
+  2. Claude API entegrasyonu yapıldı (sonradan kaldırıldı)
+  3. Ollama entegrasyonu yapıldı (llama3.1:8b, yerel model)
+  4. Ollama timeout sorunu çözüldü (streaming + erken çıkış)
+  5. Saf Python analizi eklendi (python_analyze — Ollama'ya gerek kalmadı)
+  6. Olay tespiti limitleri kaldırıldı (eskiden max 50 olay vardı)
+  7. Yükleme ilerleme çubuğu eklendi
+  8. Waveform beyaz görünme sorunu çözüldü (canvas 16000px limiti)
+  9. Hızlı işlem butonları mantıklı sıraya kondu (1-6)
+  10. IndexedDB ile dosya arşivleme eklendi (F5 sonrası yeniden yükleme yok)
+      - Önce PCM olarak saklanıyordu (1.73GB — başarısız)
+      - Sonra ham dosya (M4A/WAV) olarak saklanıyor (dosya boyutu kadar)
+  11. Komut işlenirken tarama animasyonu eklendi (CSS sweep)
+  12. Komut sonucu waveform üzerine çiziliyor (kırmızı/sarı overlay)
+  13. Tüm arayüz Türkçe yapıldı
+  14. İki aşamalı analiz: Python (anında) + Ollama (zenginleştirme)
+  15. Whisper entegrasyonu eklendi (openai-whisper, arka plan transkripsiyon)
+  16. Transkript sekmesi eklendi (timestamp'li segmentler, tıklayınca atla)
+  17. Whisper + Ollama entegrasyonu: transkript tamamlanınca Ollama yeniden
+      zenginleştirir (içerik özeti, dolgu sözcük analizi)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  10. SIK KARŞILAŞILAN HATALAR VE ÇÖZÜMLERİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  HATA: "ModuleNotFoundError: No module named 'whisper'"
+    ÇÖZÜM: pip install openai-whisper
+
+  HATA: "ModuleNotFoundError: No module named 'json_repair'"
+    ÇÖZÜM: pip install json-repair
+
+  HATA: "Connection refused" (Ollama bağlantısı)
+    ÇÖZÜM: Ollama uygulamasını açın, arka planda çalıştığından emin olun.
+    Kontrol: http://localhost:11434 adresine tarayıcıdan gidin.
+
+  HATA: "model 'llama3.1:8b' not found"
+    ÇÖZÜM: ollama pull llama3.1:8b
+
+  HATA: ffmpeg bulunamadı (Whisper transkripsiyon başlamıyor)
+    ÇÖZÜM: ffmpeg'i kurun ve PATH'e ekleyin.
+    Windows için: https://ffmpeg.org/download.html
+
+  HATA: Waveform boş / beyaz görünüyor
+    ÇÖZÜM: Otomatik düzeltildi. pps (pixel/saniye) büyük dosyalarda
+    otomatik düşürülür, canvas max 16000px ile sınırlandırılmıştır.
+
+  HATA: Sayfa yenilendiğinde ses kayboldu (arşivden yükleme çalışmıyor)
+    ÇÖZÜM: IndexedDB'de ham dosya saklanıyor. Çok büyük dosyalarda
+    (>500MB) tarayıcı izin vermeyebilir. Bu durumda dosyayı yeniden seçin.
+
+  HATA: Ollama analiz takılı kalıyor
+    ÇÖZÜM: server.py streaming modu kullanır, JSON tamamlanınca erken çıkar.
+    Ollama servisi yanıt vermiyorsa: Ollama uygulamasını yeniden başlatın.
+
+  HATA: "/var/data/python" ile ilgili hata (Windows'ta)
+    ÇÖZÜM: server.py dosyasında şu satırı bulup kaldırın:
+      sys.path.insert(0, '/var/data/python')
+    Ve Whisper model yolunu değiştirin (Bölüm 6'ya bakın).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  11. GEREKSİNİMLER ÖZETİ (Windows için minimum)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Yazılım:
+    Python 3.11 veya 3.12
+    Ollama (https://ollama.com)
+    FFmpeg (PATH'te erişilebilir olmalı)
+    Modern tarayıcı (Chrome, Edge, Firefox — Web Audio API desteği)
+
+  Python Paketleri:
+    flask
+    flask-cors
+    json-repair
+    openai-whisper          (PyTorch dahil ~2GB)
+
+  Ollama Modeli:
+    llama3.1:8b             (~4.7GB disk)
+
+  Whisper Modeli (seçime göre):
+    tiny                    (~75MB)
+    small                   (~461MB) ← tavsiye edilen başlangıç
+    large                   (~2.9GB) ← maksimum doğruluk
+
+  Disk Alanı (minimum tavsiye):
+    ~10GB (tüm modeller + paketler + çalışma alanı)
+
+  RAM:
+    Minimum: 8GB
+    Tavsiye: 16GB (Whisper large için)
+
+  GPU (isteğe bağlı):
+    NVIDIA CUDA destekli GPU varsa Whisper 5-10 kat hızlanır.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  12. WINDOWS İÇİN SERVER.PY DEĞİŞİKLİKLERİ (zorunlu)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  server.py dosyasını metin editörüyle açın.
+
+  DEĞİŞİKLİK 1 — Linux-özel PATH satırını kaldırın (dosyanın başına yakın):
+    Şunu bulun:
+      WHISPER_PATH = '/var/data/python'
+      if WHISPER_PATH not in sys.path:
+          sys.path.insert(0, WHISPER_PATH)
+    Bunları silin veya # ile yorum satırı yapın.
+
+  DEĞİŞİKLİK 2 — Whisper model download dizinini değiştirin:
+    Şunu bulun:
+      _whisper_model = _whisper_lib.load_model(WHISPER_MODEL_NAME,
+                                               download_root='/var/data/whisper_models')
+    Şununla değiştirin:
+      _whisper_model = _whisper_lib.load_model(WHISPER_MODEL_NAME)
+
+  DEĞİŞİKLİK 3 — Whisper geçici dosya yolunu değiştirin:
+    Şunu bulun:
+      tmp_path = f'/var/data/whisper_tmp_{int(time.time())}{suffix}'
+    Şununla değiştirin:
+      import tempfile
+      tmp_path = os.path.join(tempfile.gettempdir(), f'whisper_tmp_{int(time.time())}{suffix}')
+
+  Bu üç değişiklik dışında başka değişiklik gerekmez.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  13. CLAUDE'A VERİLECEK BAĞLAM (yeni bilgisayarda okutmak için)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Yeni bilgisayarda Claude Code'u açtığınızda şunu söyleyin:
+
+  "Bu proje VoiceCraft AI adında bir ses editörü. Proje notları için
+   PROJE_NOTLARI.txt dosyasını oku. Bu dosyada mimarisi, kurulumu ve
+   yapılan tüm geliştirmeler var. Windows'a taşındık, gerekli
+   server.py değişikliklerini yap ve kurulumu tamamla."
+
+  Ardından Claude bu dosyayı okuyarak kuruluma devam edebilir.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  14. NOTLAR VE KISITLAMALAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  - Uygulama gerçek anlamda ses DÜZENLEME yapmaz. Analiz ve işaretleme yapar.
+    Gerçek ses kesme/silme işlemi için FFmpeg entegrasyonu gerekir (henüz yok).
+    Şu an komutlar ve analiz waveform üzerinde gösterilir ama dışa aktarım yok.
+
+  - Waveform render için canvas max 16000px ile sınırlıdır.
+    2.5 saatlik dosya için piksel/saniye otomatik düşürülür.
+
+  - IndexedDB'deki arşiv sadece o tarayıcıya özeldir. Farklı tarayıcıda
+    açılırsa dosya yeniden seçilmesi gerekir.
+
+  - Ollama komut yanıtları İngilizce üretilir, arayüzde çeviri haritası vardır.
+    Tüm UI Türkçedir.
+
+  - Whisper transkripsiyon sonucu sadece görüntüleme amaçlıdır.
+    SRT/TXT olarak dışa aktarım özelliği henüz geliştirilmemiştir.
+
+================================================================================
+  Son güncelleme: 19 Mart 2026
+  Geliştirme ortamı: Debian Linux → Windows'a taşındı
+================================================================================
