@@ -42,11 +42,28 @@ function applyUpdate() {
         if (s.status === 'error') {
           clearInterval(timer);
           if (prog) prog.textContent = 'Hata: ' + s.error;
+          var cb = document.getElementById('update-bar-copy');
+          if (cb) cb.style.display = 'inline-block';
           if (btn) { btn.textContent = 'Tekrar Dene'; btn.disabled = false; }
         }
       });
     }, 2000);
   }).catch(function(e) { alert('Baglanti hatasi: ' + e.message); });
+}
+
+function copyUpdateError() {
+  var prog = document.getElementById('update-bar-progress');
+  var txt = document.getElementById('update-bar-text');
+  var msg = (txt ? txt.textContent + '\n' : '') + (prog ? prog.textContent : '');
+  navigator.clipboard.writeText(msg).then(function() {
+    var cb = document.getElementById('update-bar-copy');
+    if (cb) { var orig = cb.textContent; cb.textContent = '✓ Kopyalandi'; setTimeout(function() { cb.textContent = orig; }, 2000); }
+  }).catch(function() {
+    var ta = document.createElement('textarea');
+    ta.value = msg; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    alert('Kopyalandi:\n' + msg);
+  });
 }
 
 let _rawFileBlob = null;          // yüklenen ham dosya (File objesi) — TDZ önlemek için en üstte

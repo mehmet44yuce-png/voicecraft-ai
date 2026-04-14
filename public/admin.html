@@ -207,6 +207,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
     <button id="update-bar-btn" onclick="applyUpdate()" style="padding:4px 14px;background:#22c55e;border:none;color:#0f172a;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">Guncelle</button>
     <button onclick="document.getElementById('update-bar').style.display='none'" style="padding:4px 10px;background:transparent;border:1px solid #334155;color:#64748b;border-radius:4px;cursor:pointer;font-size:10px">Kapat</button>
     <span id="update-bar-progress" style="display:none;color:#fbbf24"></span>
+    <button id="update-bar-copy" onclick="copyUpdateError()" title="Hatayi kopyala" style="display:none;padding:4px 8px;background:transparent;border:1px solid #fbbf24;color:#fbbf24;border-radius:4px;cursor:pointer;font-size:11px">📋 Kopyala</button>
   </div>
 </div>
 <script>
@@ -245,11 +246,25 @@ function applyUpdate(){
         if(s.status==='error'){
           clearInterval(timer);
           if(prog) prog.textContent='Hata: '+s.error;
+          var cb=document.getElementById('update-bar-copy');
+          if(cb) cb.style.display='inline-block';
           if(btn){btn.textContent='Tekrar Dene';btn.disabled=false;}
         }
       });
     },2000);
   }).catch(function(e){alert('Baglanti hatasi: '+e.message);});
+}
+function copyUpdateError(){
+  var prog=document.getElementById('update-bar-progress');
+  var txt=document.getElementById('update-bar-text');
+  var msg=(txt?txt.textContent+'\n':'')+(prog?prog.textContent:'');
+  navigator.clipboard.writeText(msg).then(function(){
+    var cb=document.getElementById('update-bar-copy');
+    if(cb){var orig=cb.textContent;cb.textContent='✓ Kopyalandi';setTimeout(function(){cb.textContent=orig;},2000);}
+  }).catch(function(){
+    var ta=document.createElement('textarea');ta.value=msg;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    alert('Kopyalandi:\n'+msg);
+  });
 }
 </script>
 
