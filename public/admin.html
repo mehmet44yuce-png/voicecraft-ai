@@ -200,6 +200,59 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 </head>
 <body>
 
+<!-- Guncelleme bildirimi -->
+<div id="update-bar" style="display:none;background:linear-gradient(90deg,#1e3a5f,#14532d);border-bottom:2px solid #22c55e;padding:8px 16px;font-size:12px;color:#4ade80;position:relative;z-index:10000">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span id="update-bar-text">Guncelleme mevcut</span>
+    <button id="update-bar-btn" onclick="applyUpdate()" style="padding:4px 14px;background:#22c55e;border:none;color:#0f172a;border-radius:4px;cursor:pointer;font-size:11px;font-weight:700">Guncelle</button>
+    <button onclick="document.getElementById('update-bar').style.display='none'" style="padding:4px 10px;background:transparent;border:1px solid #334155;color:#64748b;border-radius:4px;cursor:pointer;font-size:10px">Kapat</button>
+    <span id="update-bar-progress" style="display:none;color:#fbbf24"></span>
+  </div>
+</div>
+<script>
+(function(){
+  fetch('/api/update/check').then(function(r){return r.json();}).then(function(d){
+    if(d.success && d.update){
+      var bar=document.getElementById('update-bar');
+      var txt=document.getElementById('update-bar-text');
+      if(bar) bar.style.display='block';
+      if(txt) txt.textContent='v'+d.update.new_version+' mevcut — '+d.update.files_to_update+' dosya degismis'+(d.update.changelog?' | '+d.update.changelog:'');
+    }
+  }).catch(function(){});
+})();
+function applyUpdate(){
+  var btn=document.getElementById('update-bar-btn');
+  var prog=document.getElementById('update-bar-progress');
+  if(btn){btn.disabled=true;btn.textContent='Guncelleniyor...';}
+  if(prog) prog.style.display='inline';
+  fetch('/api/update/apply',{method:'POST'}).then(function(r){return r.json();}).then(function(d){
+    if(!d.success){alert('Guncelleme hatasi: '+d.error);return;}
+    var timer=setInterval(function(){
+      fetch('/api/update/status/'+d.job_id).then(function(r){return r.json();}).then(function(s){
+        if(prog) prog.textContent='%'+s.pct+' — '+s.step;
+        if(s.status==='done'){
+          clearInterval(timer);
+          if(prog) prog.textContent='Guncelleme tamamlandi!';
+          if(btn){btn.textContent='Yeniden Baslat';btn.disabled=false;
+            btn.onclick=function(){
+              fetch('/api/update/restart',{method:'POST'}).then(function(){
+                if(prog) prog.textContent='Sunucu yeniden baslatiliyor... 5 saniye bekleyin';
+                setTimeout(function(){location.reload();},5000);
+              });
+            };
+          }
+        }
+        if(s.status==='error'){
+          clearInterval(timer);
+          if(prog) prog.textContent='Hata: '+s.error;
+          if(btn){btn.textContent='Tekrar Dene';btn.disabled=false;}
+        }
+      });
+    },2000);
+  }).catch(function(e){alert('Baglanti hatasi: '+e.message);});
+}
+</script>
+
 <!-- Sol Sekme Çubuğu -->
 <nav class="sidebar">
   <div class="sidebar-logo">
