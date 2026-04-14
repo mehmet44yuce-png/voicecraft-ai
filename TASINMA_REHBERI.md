@@ -39,7 +39,7 @@ version.json              — Versiyon + hash manifest
 launcher.py               — Başlatıcı (exit code 42 restart loop)
 requirements.txt          — Python paket listesi
 Setup.bat                 — Kurulum sihirbazı
-Synergy-Kendiyas-Fabric.bat  — Çalıştırıcı
+VoiceCraft-AI.bat            — Çalıştırıcı
 public/                   — Frontend (index.html, app.js, admin.html, style.css)
 bin/ffmpeg.exe            — FFmpeg (portable)
 bin/ffprobe.exe
@@ -72,7 +72,7 @@ ANTHROPIC_API_KEY=sk-ant-XXXXXXXXXXXXX
 ## 4. Adım Adım Kurulum (Yeni Bilgisayarda)
 
 ### Adım 1 — Dosyaları Kopyala
-ZIP'i (ör. `Synergy-Kendiyas-Fabric.zip`) hedef bilgisayara aktar ve aç.
+ZIP'i (ör. `VoiceCraft-AI.zip`) hedef bilgisayara aktar ve aç.
 
 ### Adım 2 — Setup.bat'i Yönetici Olarak Çalıştır
 Sağ tık → "Yönetici olarak çalıştır"
@@ -88,7 +88,7 @@ Sihirbaz 5 adımdan geçer:
 Setup boş `.env` oluşturur. Eski bilgisayardan kopyalayabilir veya Admin Panel → İşlem Ayarları'ndan HF_TOKEN girebilirsin.
 
 ### Adım 4 — İlk Çalıştırma
-Masaüstü kısayoluna çift tıkla veya `Synergy-Kendiyas-Fabric.bat`. Tarayıcıda otomatik `http://localhost:3000` açılır.
+Masaüstü kısayoluna çift tıkla veya `VoiceCraft-AI.bat`. Tarayıcıda otomatik `http://localhost:3000` açılır.
 
 ### Adım 5 — Test Et
 - **Admin Panel** (`/admin.html`) → Sistem Durumu → GPU algılanmış mı?
@@ -126,7 +126,7 @@ Masaüstü kısayoluna çift tıkla veya `Synergy-Kendiyas-Fabric.bat`. Tarayıc
   ```
 
 ### "CUDA_VISIBLE_DEVICES= " ile CPU moduna zorla
-`Synergy-Kendiyas-Fabric.bat` içine ekle:
+`VoiceCraft-AI.bat` içine ekle:
 ```bat
 set CUDA_VISIBLE_DEVICES=
 ```

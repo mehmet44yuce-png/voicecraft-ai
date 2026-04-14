@@ -196,7 +196,7 @@ ffmpeg subprocess sync calistirken job['pct'] guncellemesi yapilamaz.
 - `installer/create_manual_pdf.py` — PDF kilavuz olusturur
 - `installer/launcher.py` — baslat + guncelleme kontrol + restart loop
 - `Setup.bat` — 5 adimli kurulum sihirbazi (VC++, Python, FFmpeg, PyTorch, AI modeller, Whisper model)
-- `Synergy-Kendiyas-Fabric.bat` — calistir (CUDA_VISIBLE_DEVICES= ile GPU yoksa hata onleme)
+- `VoiceCraft-AI.bat` — calistir (CUDA_VISIBLE_DEVICES= ile GPU yoksa hata onleme)
 - Masaustu kisayolu otomatik olusturulur
 - GPU yoksa otomatik CPU PyTorch, DLL hatasi → eski versiyon fallback
 - Eksik paketler: python-dotenv, json-repair, pyloudnorm (Setup'a eklendi)

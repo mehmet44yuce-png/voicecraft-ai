@@ -1,5 +1,5 @@
 """
-Synergy Kendiyas Fabric — Manifest Olusturucu
+VoiceCraft AI — Manifest Olusturucu
 Her release'de calistirilir. manifest.json + version.json uretir.
 
 Kullanim:
@@ -23,7 +23,7 @@ def main():
     version = sys.argv[1]
     changelog = sys.argv[2] if len(sys.argv) > 2 and not sys.argv[2].startswith('--') else ''
 
-    base_url = 'https://github.com/synergykendiyas/fabric/releases/download/v' + version
+    base_url = 'https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v' + version
     for i, arg in enumerate(sys.argv):
         if arg == '--base-url' and i + 1 < len(sys.argv):
             base_url = sys.argv[i + 1]

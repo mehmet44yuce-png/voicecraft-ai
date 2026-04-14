@@ -1,4 +1,4 @@
-"""Synergy Kendiyas Fabric — Kurulum ve Kullanim Kilavuzu PDF"""
+"""VoiceCraft AI — Kurulum ve Kullanim Kilavuzu PDF"""
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm, mm
 from reportlab.lib.colors import HexColor
@@ -7,8 +7,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 import os
 
-OUTPUT = os.path.join(os.path.dirname(__file__), 'dist', 'Synergy-Kendiyas-Fabric',
-                      'Synergy Kendiyas Fabric - Kurulum Kilavuzu.pdf')
+OUTPUT = os.path.join(os.path.dirname(__file__), 'dist', 'VoiceCraft-AI',
+                      'VoiceCraft AI - Kurulum Kilavuzu.pdf')
 
 # Renkler
 DARK_BG = HexColor('#0f172a')
@@ -79,7 +79,7 @@ def build():
     # KAPAK
     # ═══════════════════════════════════════════════
     story.append(Spacer(1, 4*cm))
-    story.append(Paragraph('Synergy Kendiyas Fabric', title_style))
+    story.append(Paragraph('VoiceCraft AI', title_style))
     story.append(Paragraph('AI Ses ve Video Editoru', subtitle_style))
     story.append(Spacer(1, 1*cm))
     story.append(HRFlowable(width='60%', thickness=2, color=BLUE))
@@ -175,7 +175,7 @@ def build():
 
     story.append(Paragraph('Adim 1: Dosyalari Cikartin', h2))
     story.append(Paragraph('Indirdiginiz ZIP dosyasini istediginiz bir klasore cikartin. '
-                          'Ornegin: <b>D:\\Programs\\Synergy-Kendiyas-Fabric\\</b>', body))
+                          'Ornegin: <b>D:\\Programs\\VoiceCraft-AI\\</b>', body))
 
     story.append(Paragraph('Adim 2: Setup.bat Calistirin', h2))
     story.append(Paragraph('<b>Setup.bat</b> dosyasina cift tiklayin. Kurulum sihirbazi acilacak.', body))
@@ -218,7 +218,7 @@ def build():
     story.append(Paragraph('3. Programi Baslatma', h1))
     story.append(HRFlowable(width='100%', thickness=1, color=BLUE))
 
-    story.append(Paragraph('<b>Synergy-Kendiyas-Fabric.bat</b> dosyasina cift tiklayin.', body))
+    story.append(Paragraph('<b>VoiceCraft-AI.bat</b> dosyasina cift tiklayin.', body))
     story.append(Paragraph('Program sunucuyu baslatacak ve tarayicinizda otomatik olarak '
                           '<b>http://localhost:3000</b> adresini acacaktir.', body))
 
@@ -452,7 +452,7 @@ def build():
     story.append(Spacer(1, 2*cm))
     story.append(HRFlowable(width='100%', thickness=1, color=GRAY))
     story.append(Spacer(1, 0.5*cm))
-    story.append(Paragraph('Synergy Kendiyas Fabric v1.0.0 — AI Ses ve Video Editoru',
+    story.append(Paragraph('VoiceCraft AI v1.0.0 — AI Ses ve Video Editoru',
         ParagraphStyle('Footer', parent=body, fontSize=9, textColor=GRAY, alignment=TA_CENTER)))
     story.append(Paragraph('Nisan 2026',
         ParagraphStyle('Footer2', parent=body, fontSize=8, textColor=GRAY, alignment=TA_CENTER)))

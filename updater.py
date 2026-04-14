@@ -1,5 +1,5 @@
 """
-Synergy Kendiyas Fabric — Uzaktan Guncelleme Motoru
+VoiceCraft AI — Uzaktan Guncelleme Motoru
 GitHub Releases uzerinden diferansiyel guncelleme.
 """
 import os
@@ -14,7 +14,7 @@ from pathlib import Path
 log = logging.getLogger('updater')
 
 # ── Yapilandirma ─────────────────────────────────────────────────────────────
-UPDATE_URL = "https://raw.githubusercontent.com/synergykendiyas/fabric/main/manifest.json"
+UPDATE_URL = "https://raw.githubusercontent.com/mehmet44yuce-png/voicecraft-ai/main/manifest.json"
 CHECK_TIMEOUT = 5
 DOWNLOAD_TIMEOUT = 60
 MAX_BACKUPS = 3
@@ -81,7 +81,7 @@ class Updater:
         """Uzak manifest'i kontrol et, guncelleme varsa bilgi don."""
         import urllib.request
         try:
-            req = urllib.request.Request(self.update_url, headers={'User-Agent': 'SynergyFabric/1.0'})
+            req = urllib.request.Request(self.update_url, headers={'User-Agent': 'VoiceCraftAI/1.0'})
             with urllib.request.urlopen(req, timeout=CHECK_TIMEOUT) as resp:
                 manifest = json.loads(resp.read().decode('utf-8'))
 
@@ -186,7 +186,7 @@ class Updater:
             dst.parent.mkdir(parents=True, exist_ok=True)
 
             try:
-                req = urllib.request.Request(url, headers={'User-Agent': 'SynergyFabric/1.0'})
+                req = urllib.request.Request(url, headers={'User-Agent': 'VoiceCraftAI/1.0'})
                 with urllib.request.urlopen(req, timeout=DOWNLOAD_TIMEOUT) as resp:
                     with open(dst, 'wb') as f:
                         f.write(resp.read())

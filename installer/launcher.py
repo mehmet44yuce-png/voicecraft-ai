@@ -1,5 +1,5 @@
 """
-Synergy Kendiyas Fabric — Portable Launcher
+VoiceCraft AI — Portable Launcher
 Cift tiklayinca Flask sunucusu baslar ve tarayici acilir.
 Guncelleme kontrolu ve otomatik yeniden baslatma destegi.
 """
@@ -126,7 +126,7 @@ def run_with_restart():
 def run_simple():
     """Basit mod — konsol penceresi ile calistir."""
     print('=' * 50)
-    print('  Synergy Kendiyas Fabric')
+    print('  VoiceCraft AI')
     print('  AI Ses ve Video Editoru')
     print('=' * 50)
     print()
@@ -160,12 +160,12 @@ def run_with_tray():
             icon.stop()
 
         menu = pystray.Menu(
-            pystray.MenuItem('Synergy Fabric Ac', on_open, default=True),
+            pystray.MenuItem('VoiceCraft AI Ac', on_open, default=True),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem('Sunucuyu Durdur ve Cik', on_quit)
         )
 
-        icon = pystray.Icon('Synergy Fabric', create_icon(), 'Synergy Kendiyas Fabric', menu)
+        icon = pystray.Icon('VoiceCraft AI', create_icon(), 'VoiceCraft AI', menu)
 
         def setup(icon):
             icon.visible = True

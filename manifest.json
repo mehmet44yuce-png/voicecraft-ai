@@ -1,0 +1,14 @@
+{
+  "version": "1.0.1",
+  "release_date": "2026-04-15",
+  "min_version": "1.0.0",
+  "changelog": "Repo URL guncellendi (synergykendiyas/fabric -> mehmet44yuce-png/voicecraft-ai)",
+  "files": {
+    "updater.py": {
+      "sha256": "35690db14dff948f460c61c82b6bb935e6c40a2c372a6450d349372dbeec5f98",
+      "size": 14991,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.1/updater.py"
+    }
+  },
+  "delete": []
+}
