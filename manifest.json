@@ -1,18 +1,13 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "release_date": "2026-04-15",
   "min_version": "1.0.0",
-  "changelog": "Ana sayfaya admin butonu + admin paneline guncelleme bildirimi eklendi",
+  "changelog": "Admin panele Ana Sayfa donus butonu eklendi",
   "files": {
-    "public/index.html": {
-      "sha256": "c47bda5194a5adc1f90a367cf9a23be6fbe521c0ee5cb672054ddfb2701218e7",
-      "size": 36238,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.2/index.html"
-    },
     "public/admin.html": {
-      "sha256": "b3aff85379191eedb555e42be256afc498c9a1d5869ed4baf27e75f6538d886a",
-      "size": 112816,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.2/admin.html"
+      "sha256": "4ad7dea12ef59841c55a7ca1609f0ccad930e3fe48ae19df04c7b6f224ae12a2",
+      "size": 113104,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.3/admin.html"
     }
   },
   "delete": []
