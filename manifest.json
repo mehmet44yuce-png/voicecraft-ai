@@ -1,13 +1,13 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "release_date": "2026-04-15",
   "min_version": "1.0.0",
-  "changelog": "EXCLUDE listesine .git/.venv eklendi (manifest sismeleri onleme)",
+  "changelog": "CLAUDE.md release.py workflow ve EXCLUDE notu eklendi",
   "files": {
-    "updater.py": {
-      "sha256": "d33abf1987d8d99a045c2e4f0a54b403bbcd6f56e034303b3c264fc8957ae842",
-      "size": 15084,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.5/updater.py"
+    "CLAUDE.md": {
+      "sha256": "3f73501330b1bf2bf6527c1ef0c08fbc2b8c3ce68c4a650a92760548997075e8",
+      "size": 13740,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.6/CLAUDE.md"
     }
   },
   "delete": []

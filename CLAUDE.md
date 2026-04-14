@@ -184,12 +184,28 @@ ffmpeg subprocess sync calistirken job['pct'] guncellemesi yapilamaz.
 ## Uzaktan Guncelleme Sistemi
 - `updater.py` — guncelleme motoru (check, diff, download, backup, apply, rollback)
 - `version.json` — yerel versiyon + dosya hash'leri
+- GitHub repo: `mehmet44yuce-png/voicecraft-ai` (PUBLIC olmali, yoksa anonim erisim 404)
 - GitHub Releases uzerinden manifest.json + degisen dosyalar
 - SHA-256 hash dogrulama, otomatik yedekleme (3 yedek tutulur)
-- Frontend bildirim cubugu + otomatik uygulama
+- Frontend bildirim cubugu (hem index.html hem admin.html) + otomatik uygulama
 - Sunucu restart: exit code 42 → launcher tekrar baslatir
 - API: `/api/update/check`, `/api/update/apply`, `/api/update/status/:id`, `/api/update/rollback`, `/api/update/restart`
-- Manifest olusturma: `python installer/build_manifest.py 1.1.0 "changelog"`
+
+### Release Yayinlama (otomatik — TERCIH EDILEN)
+```bash
+python release.py 1.0.6 "Bug fix aciklamasi"
+# veya belirli dosyalar icin:
+python release.py 1.0.6 "Sadece UI" public/index.html public/admin.html
+```
+Script otomatik: degisen dosyalari tespit eder → manifest yazar → commit + push → GitHub release olusturur → dosyalari yukler → hash dogrular.
+
+**Gereksinim:** `.env`'de `GITHUB_TOKEN=ghp_xxx` (scope: `repo`). Token uretmek: https://github.com/settings/tokens
+
+### Release Yayinlama (manuel — KULLANMA)
+`python installer/build_manifest.py 1.1.0 "changelog"` — eski yontem. Manifest uretir ama GitHub release/upload manuel. Hash mismatch riskli (yanlis dosya yuklenebilir). `release.py` kullan.
+
+### EXCLUDE Listesi (KRITIK)
+`updater.py` icindeki `EXCLUDE` set'ine `.git`, `.venv`, `venv`, `voicecraft`, `installer`, `.vscode`, `.idea`, `yedek` dahil olmali. Yoksa `compute_local_hashes()` git internals + venv'i tarar → manifest sisirilir, performans cokusu ve gereksiz dosya transferi.
 
 ## Portable Dagitim (installer/)
 - `installer/build_portable.py` — portable paket olusturur
