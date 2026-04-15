@@ -1,13 +1,18 @@
 {
-  "version": "1.1.9",
-  "release_date": "2026-04-15",
+  "version": "1.2.0",
+  "release_date": "2026-04-16",
   "min_version": "1.0.0",
-  "changelog": "Video kesim: konusmaci nefes payi arttirildi (pad 100ms->450ms, minCut 250ms)",
+  "changelog": "launcher.py: masaustu kisayolu olusturur, server_output.log yazar; CLAUDE.md guncellendi",
   "files": {
-    "public/app.js": {
-      "sha256": "9d469d952121c219da95a1b54369d708faf1d8d4ed614f7e54346927880aaa95",
-      "size": 569372,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.9/app.js"
+    "launcher.py": {
+      "sha256": "c7849f31bd871232e31e16c69774eafe578a6d7f7a75bc5eed1f7a04eddb0e33",
+      "size": 7066,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.2.0/launcher.py"
+    },
+    "CLAUDE.md": {
+      "sha256": "a31766664072c51273972451f3cea136524374a2d3ca1fc808bc37b066ab0580",
+      "size": 18285,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.2.0/CLAUDE.md"
     }
   },
   "delete": []

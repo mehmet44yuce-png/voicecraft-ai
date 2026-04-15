@@ -32,6 +32,62 @@ os.environ['PORT'] = str(PORT)
 server_process = None
 
 
+def create_desktop_shortcut():
+    """Masaustu kisayolu yoksa olustur."""
+    try:
+        desktop = os.path.join(os.path.expanduser('~'), 'Desktop')
+        shortcut_path = os.path.join(desktop, 'VoiceCraft AI.lnk')
+        if os.path.exists(shortcut_path):
+            return
+        bat_path = os.path.join(APP_DIR, 'VoiceCraft-AI.bat')
+        if not os.path.exists(bat_path):
+            return
+        icon_path = os.path.join(APP_DIR, 'voicecraft.ico')
+        # Ikon yoksa PIL ile olustur
+        if not os.path.exists(icon_path):
+            try:
+                from PIL import Image, ImageDraw, ImageFont
+                sizes = [256, 64, 48, 32, 16]
+                imgs = []
+                for sz in sizes:
+                    img = Image.new('RGBA', (sz, sz), (0, 0, 0, 0))
+                    draw = ImageDraw.Draw(img)
+                    m = max(2, sz // 16)
+                    draw.ellipse([m, m, sz - m, sz - m], fill=(59, 130, 246, 255))
+                    text = 'VC'
+                    try:
+                        font = ImageFont.truetype('arial.ttf', sz // 3)
+                    except Exception:
+                        font = ImageFont.load_default()
+                    bbox = draw.textbbox((0, 0), text, font=font)
+                    tw = bbox[2] - bbox[0]
+                    th = bbox[3] - bbox[1]
+                    draw.text(((sz - tw) // 2 - bbox[0], (sz - th) // 2 - bbox[1]), text, font=font, fill='white')
+                    imgs.append(img)
+                imgs[0].save(icon_path, format='ICO', sizes=[(s, s) for s in sizes], append_images=imgs[1:])
+            except Exception:
+                icon_path = ''
+        ps = (
+            '$ws = New-Object -ComObject WScript.Shell; '
+            f'$s = $ws.CreateShortcut("{shortcut_path}"); '
+            f'$s.TargetPath = "{bat_path}"; '
+            f'$s.WorkingDirectory = "{APP_DIR}"; '
+            f'$s.Description = "VoiceCraft AI"; '
+            + (f'$s.IconLocation = "{icon_path},0"; ' if icon_path else '')
+            + '$s.Save()'
+        )
+        result = subprocess.run(
+            ['powershell', '-NoProfile', '-Command', ps],
+            capture_output=True, text=True
+        )
+        if os.path.exists(shortcut_path):
+            print('  [OK] Masaustu kisayolu olusturuldu: VoiceCraft AI.lnk')
+        else:
+            print(f'  [!] Kisayol olusturulamadi: {result.stderr.strip()}')
+    except Exception as e:
+        print(f'  [!] Kisayol hatasi: {e}')
+
+
 def check_for_updates():
     try:
         sys.path.insert(0, APP_DIR)
@@ -52,11 +108,13 @@ def check_for_updates():
 def start_server():
     global server_process
     python_exe = sys.executable
+    log_path = os.path.join(APP_DIR, 'server_output.log')
+    log_file = open(log_path, 'a', encoding='utf-8', errors='replace')
     server_process = subprocess.Popen(
         [python_exe, SERVER_PY],
         cwd=APP_DIR,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stdout=log_file,
+        stderr=log_file,
         creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
     )
     return server_process
@@ -141,6 +199,7 @@ def run_with_tray():
 
         def setup(icon):
             icon.visible = True
+            create_desktop_shortcut()
             print('[*] Guncelleme kontrol ediliyor...')
             check_for_updates()
             run_with_restart()
@@ -155,6 +214,7 @@ def run_simple():
     print('=' * 45)
     print('  VoiceCraft AI')
     print('=' * 45)
+    create_desktop_shortcut()
     check_for_updates()
     run_with_restart()
 

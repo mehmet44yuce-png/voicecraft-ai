@@ -25,7 +25,7 @@ server.py             — Flask backend (3900+ satir, tum API'ler)
 .env.default          — Dagitim icin varsayilan HF_TOKEN (gitignore'da, ZIP'e dahil edilir)
 setup_compat.py       — Kurulum sonrasi uyumluluk yamalari (Resemble, DeepFilter vb.)
 add_to_startup.py     — Windows otomatik baslama kaydeder (Task Scheduler veya Startup klasoru)
-launcher.py           — Sunucu baslatici (guncelleme kontrol + restart loop + sistem tepsisi)
+launcher.py           — Sunucu baslatici (guncelleme kontrol + restart loop + sistem tepsisi + masaustu kisayolu + server_output.log)
 src/server.ts         — Express yedek sunucu (kullanilmiyor normalde)
 public/
   index.html          — Ana sayfa (Ses + Video modulleri, 4 sekme)
