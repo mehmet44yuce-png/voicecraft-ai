@@ -13,7 +13,7 @@ AI destekli ses ve video editoru. Ses/video dosyalarini yukleyip, AI pipeline il
 
 ## Sunucu Baslatma
 ```bash
-cd "d:/Projeler/AI Audi"
+cd "d:/kod/AI Audi"
 python server.py
 ```
 **ASLA** `npm run dev`, `npx ts-node`, veya `node` kullanma. Express sunucusu (`src/server.ts`) sadece yedek. Ana backend **Flask** (`server.py`).
@@ -118,6 +118,56 @@ audio-yazar adimdan IndexedDB'deki `video_step_N`'i yukler.
 
 ## Bilinen Sorunlar ve Cozumler
 
+### DeepFilterNet + torchaudio 2.11 uyumsuzlugu
+`torchaudio.backend.common.AudioMetaData` ve `ta.info()` torchaudio 2.11'de kaldirildi.
+→ `.venv/Lib/site-packages/df/io.py` yamalanmali:
+  - `AudioMetaData` icin dataclass stub (try/except zinciri)
+  - `ta.info` yoksa soundfile ile monkey-patch
+Bu yamalar yeni ortamda tekrar yapilmali (venv yeniden olusturulursa kaybolur).
+
+### Resemble Enhance — deepspeed olmadan kurulum
+`pip install resemble-enhance` deepspeed'i zorunlu tutar, Windows'ta derlenemiyor.
+→ `pip install resemble-enhance --no-deps` (deepspeed atlanir)
+→ Asagidaki 4 dosya yamalanmali (try/except ile deepspeed opsiyonel):
+  - `.venv/.../resemble_enhance/utils/distributed.py`
+  - `.venv/.../resemble_enhance/utils/engine.py`
+  - `.venv/.../resemble_enhance/enhancer/train.py`
+  - `.venv/.../resemble_enhance/denoiser/train.py`
+
+### Resemble Enhance — model indirme (Git LFS)
+Model `pip install` ile gelmez, git clone gerekir:
+```powershell
+cd ".venv\Lib\site-packages\resemble_enhance"
+git clone https://huggingface.co/ResembleAI/resemble-enhance model_repo --no-local
+cd model_repo
+git lfs install
+git lfs pull
+```
+Git LFS kurulu degilse once: `winget install GitHub.GitLFS`
+
+### Resemble Enhance — PosixPath hatasi (Windows)
+`model_repo/enhancer_stage2/hparams.yaml` Linux'ta kaydedilmis, `PosixPath` nesneleri var.
+Windows'ta `cannot instantiate 'PosixPath'` hatasi verir.
+→ hparams.yaml icindeki su 3 satiri string path'e cevir:
+```yaml
+# ONCE (bozuk):
+fg_dir: !!python/object/apply:pathlib.PosixPath
+- data
+- fg
+# SONRA (duzeltilmis):
+fg_dir: data/fg
+```
+bg_dir ve rir_dir icin de ayni sekilde.
+
+### Resemble Enhance — CUDA tensor karışıklığı (torchaudio 2.11)
+torchaudio 2.11 ile Resemble model icinde CPU/GPU tensor karismasi oluyor.
+→ `server.py` icinde Resemble adimi icin `_dev = torch.device('cpu')` zorla set edilmis.
+
+### numpy surum catismasi
+`deepfilternet` numpy < 2.0 ister, `pyannote` numpy >= 2.0 ister.
+`pip install deepfilternet` numpy'i 1.26.x'e dusurebilir.
+→ Kurulumdan sonra: `pip install "numpy>=2.0" --force-reinstall`
+
 ### Flask tek thread
 Pipeline sirasinda polling Flask'i kitler.
 → `pipeFetch()` wrapper: `_pipeStepBusy` flag polling'i durdurur.
@@ -209,14 +259,40 @@ Script otomatik: degisen dosyalari tespit eder → manifest yazar → commit + p
 
 ## Portable Dagitim (installer/)
 - `installer/build_portable.py` — portable paket olusturur
-- `installer/create_manual_pdf.py` — PDF kilavuz olusturur
+- `installer/create_manual_pdf.py` — PDF kilavuz olusturur (v2 pipeline sirasi)
 - `installer/launcher.py` — baslat + guncelleme kontrol + restart loop
-- `Setup.bat` — 5 adimli kurulum sihirbazi (VC++, Python, FFmpeg, PyTorch, AI modeller, Whisper model)
+- `Setup.bat` — 6 adimli kurulum sihirbazi: 1.Python 3.12 → 2.FFmpeg → 3.PyTorch cu128 → 4.AI paketleri → 5.HF Token → 6.Tamamlandi
 - `VoiceCraft-AI.bat` — calistir (CUDA_VISIBLE_DEVICES= ile GPU yoksa hata onleme)
 - Masaustu kisayolu otomatik olusturulur
 - GPU yoksa otomatik CPU PyTorch, DLL hatasi → eski versiyon fallback
-- Eksik paketler: python-dotenv, json-repair, pyloudnorm (Setup'a eklendi)
+- Paketler: python-dotenv, json-repair, pyloudnorm, resemble-enhance, voicefixer, silero dahil
 - Visual C++ Runtime otomatik kurulumu
+
+### Kurulu Surum Referansi (Nisan 2026)
+| Paket | Surum | Not |
+|-------|-------|-----|
+| torch / torchaudio | 2.11.0+cu128 | RTX 50xx Blackwell icin cu128 zorunlu |
+| anthropic | 0.94.1 | |
+| flask / flask-cors | 3.1.3 / 6.0.2 | |
+| faster-whisper | 1.2.1 | |
+| openai-whisper | 20250625 | |
+| demucs | 4.0.1 | |
+| noisereduce | 3.0.3 | |
+| DeepFilterNet | 0.5.6 | df/io.py yamasi gerekli (torchaudio 2.11) |
+| silero-vad | 6.2.1 | |
+| voicefixer | 0.1.3 | |
+| resemble-enhance | 0.0.1 | --no-deps + deepspeed yamasi + model LFS |
+| pyannote.audio | 4.0.4 | |
+| onnxruntime | 1.24.4 | |
+| numpy | 1.26.4 | **sabit tut** — deepfilternet<2.0, pyannote>=2.0 catismasi |
+| soundfile / librosa / scipy | 0.13.1 / 0.11.0 / 1.17.1 | |
+| pyloudnorm | 0.2.0 | |
+| psutil / nvidia-ml-py | 7.2.2 / 13.595.45 | Sistem izleme |
+| GitPython | 3.1.46 | Release sistemi |
+| python-dotenv / json-repair | 1.2.2 / 0.59.3 | |
+| pystray / Pillow | 0.19.5 / 12.2.0 | |
+
+**Kurulum sirasi:** torch (cu128) → pip requirements → resemble-enhance --no-deps → df/io.py yamasi → numpy sabitle
 
 ## Gelistirme Kurallari
 1. **Ses modulune dokunma** — calisiyor, test edilmis

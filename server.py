@@ -2966,8 +2966,8 @@ def resemble_enhance_audio():
                            capture_output=True, timeout=120)
         if r.returncode != 0:
             raise RuntimeError('ffmpeg: ' + r.stderr.decode('utf-8', errors='replace')[-200:])
-        _dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        log.info(f'[re] CUDA available={torch.cuda.is_available()}, device={_dev}')
+        _dev = torch.device('cpu')  # Resemble: torchaudio 2.11 ile CUDA tensor karışıklığı
+        log.info(f'[re] CUDA available={torch.cuda.is_available()}, device={_dev} (cpu forced)')
         # Model download bypass — model_repo zaten klonlanmis
         import resemble_enhance.enhancer.download as _re_dl
         _re_dl.download = lambda: _re_dl.REPO_DIR / "enhancer_stage2"

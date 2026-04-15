@@ -155,28 +155,137 @@ Setup.bat tekrar gerektirse bu dosyayı sil, tekrar çalışır.
 ## 7. Manuel Kurulum (Setup.bat İşe Yaramazsa)
 
 ```powershell
-# 1. Python sanal ortam (opsiyonel ama tavsiye)
+# 1. Python sanal ortam
 python -m venv .venv
 .\.venv\Scripts\activate
 
-# 2. PyTorch (GPU varsa CUDA 12.8)
+# 2. PyTorch — RTX 50 serisi (Blackwell) icin cu128 ZORUNLU, cu124 calismaz
 pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
 
-# 3. Temel
+# 3. Temel paketler
 pip install flask flask-cors anthropic python-dotenv pystray Pillow psutil pynvml tabulate json-repair
 
 # 4. AI pipeline
-pip install faster-whisper demucs noisereduce soundfile librosa scipy numpy pydub pyannote.audio silero-vad DeepFilterNet denoiser voicefixer pyloudnorm ffmpeg-python
+pip install faster-whisper demucs noisereduce soundfile librosa pydub pyannote.audio silero-vad pyloudnorm ffmpeg-python
 
-# 5. Opsiyonel (Resemble + TTS)
+# 5. openai-whisper (whisper modulu icin)
+pip install openai-whisper
+
+# 6. DeepFilterNet
+pip install deepfilternet
+
+# 7. numpy duzelt (deepfilternet dusurur, pyannote 2.0+ ister)
+pip install "numpy>=2.0" --force-reinstall
+
+# 8. VoiceFixer
+pip install voicefixer
+
+# 9. Resemble Enhance — deepspeed OLMADAN kur
 pip install resemble-enhance --no-deps
-pip install TTS
 
-# 6. omegaconf uyumluluk
+# 10. omegaconf uyumluluk
 pip install "omegaconf>=2.3" --force-reinstall
+```
 
-# 7. Başlat
-python server.py
+### Kurulum sonrasi zorunlu yamalar
+
+#### A) DeepFilterNet — torchaudio 2.11 uyumsuzlugu
+`.venv\Lib\site-packages\df\io.py` dosyasinda su degisiklikleri yap:
+
+**9. satirdaki import'u degistir:**
+```python
+# ONCE:
+from torchaudio.backend.common import AudioMetaData
+
+# SONRA:
+try:
+    from torchaudio.backend.common import AudioMetaData
+except ImportError:
+    try:
+        from torchaudio import AudioMetaData
+    except ImportError:
+        from dataclasses import dataclass
+        @dataclass
+        class AudioMetaData:
+            sample_rate: int = 0
+            num_frames: int = 0
+            num_channels: int = 0
+            bits_per_sample: int = 0
+            encoding: str = ""
+```
+
+**`from df.logger import warn_once` satirindan hemen ONCE su blogu ekle:**
+```python
+if not hasattr(ta, 'info'):
+    import soundfile as _sf
+    def _ta_info(file, **kwargs):
+        info = _sf.info(file)
+        return AudioMetaData(sample_rate=info.samplerate, num_frames=info.frames,
+                             num_channels=info.channels, bits_per_sample=16, encoding='PCM_S')
+    ta.info = _ta_info
+```
+
+#### B) Resemble Enhance — deepspeed opsiyonel
+Su 4 dosyada `import deepspeed` satirlarini try/except ile sar:
+
+**`.venv\Lib\site-packages\resemble_enhance\utils\distributed.py`** (6-8. satirlar):
+```python
+try:
+    import deepspeed
+    from deepspeed.accelerator import get_accelerator
+    _has_deepspeed = True
+except ImportError:
+    _has_deepspeed = False
+```
+Ayni dosyada `init_distributed()` fonksiyonunda:
+```python
+if _has_deepspeed:
+    deepspeed.init_distributed(get_accelerator().communication_backend_name())
+```
+
+**`.venv\Lib\site-packages\resemble_enhance\utils\engine.py`** (6-10. satirlar):
+```python
+try:
+    import deepspeed
+    from deepspeed.accelerator import get_accelerator
+    from deepspeed.runtime.engine import DeepSpeedEngine
+    from deepspeed.runtime.utils import clip_grad_norm_
+    _has_deepspeed = True
+except ImportError:
+    _has_deepspeed = False
+    DeepSpeedEngine = object
+    def clip_grad_norm_(*a, **k): pass
+```
+
+**`.venv\Lib\site-packages\resemble_enhance\enhancer\train.py`** ve **`denoiser\train.py`** (8. satir):
+```python
+try:
+    from deepspeed import DeepSpeedConfig
+except ImportError:
+    DeepSpeedConfig = None
+```
+
+#### C) Resemble Enhance — model indirme
+```powershell
+cd ".venv\Lib\site-packages\resemble_enhance"
+# Git LFS kurulu degilse once: winget install GitHub.GitLFS && git lfs install
+git clone https://huggingface.co/ResembleAI/resemble-enhance model_repo --no-local
+cd model_repo
+git lfs pull
+```
+
+#### D) Resemble Enhance — PosixPath hatasi
+`model_repo\enhancer_stage2\hparams.yaml` dosyasinda ilk 9 satiri su sekilde degistir:
+```yaml
+fg_dir: data/fg
+bg_dir: data/bg
+rir_dir: data/rir
+```
+
+### Baslatma
+```powershell
+cd "D:\kod\AI Audi"
+.\.venv\Scripts\python.exe server.py
 ```
 
 ---
