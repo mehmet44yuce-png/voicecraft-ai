@@ -516,7 +516,7 @@ async function videoExtractAudioSilent(onProgress) {
 // Eski fonksiyon — geriye uyumluluk (video sekmesinde kalır)
 function videoExtractAndProcess() {
   switchVideoTab('audio');
-  videoStartPipeline();
+  videoStartPipeline(true);
 }
 
 // AudioBuffer → WAV Blob
@@ -590,7 +590,7 @@ function videoScreenshot() {
 }
 
 // Video pipeline — ses çıkar ve pipeline'ı video sekmesinde çalıştır
-async function videoStartPipeline() {
+async function videoStartPipeline(forceRestart) {
   if (!videoState.audioBuffer) return alert('Önce video yükleyin');
 
   var dot = document.getElementById('video-audio-status-dot');
@@ -669,7 +669,7 @@ async function videoStartPipeline() {
     } catch(eCleanup) { vLog('⚠ Eski cache temizleme uyarısı: ' + eCleanup.message, '#f59e0b'); }
     savedVideoState = null;
   }
-  if (savedVideoState && savedVideoState.fileName === videoFileName && savedVideoState.completedSteps) {
+  if (!forceRestart && savedVideoState && savedVideoState.fileName === videoFileName && savedVideoState.completedSteps) {
     videoState._completedSteps = savedVideoState.completedSteps;
     videoState._cachedFiles = savedVideoState.cachedFiles || {};
     vLog('📂 Önceki ilerleme bulundu: ' + Object.keys(savedVideoState.completedSteps).length + ' adım tamamlanmış — kaldığı yerden devam ediliyor', '#38bdf8');
@@ -1400,7 +1400,7 @@ function videoGenerateSRT() {
       placeholderEl.innerHTML = '<div style="font-size:32px;margin-bottom:12px;opacity:0.5">📝</div>' +
         'Transkript verisi bulunamadı.<br>' +
         '<b>Sesi Çıkar ve İşle</b> butonuna basarak önce Whisper transkriptini oluşturun.<br><br>' +
-        '<button onclick="switchVideoTab(\'audio\'); videoStartPipeline();" style="padding:8px 16px;background:rgba(74,222,128,0.12);border:1px solid #22c55e;color:#4ade80;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">🎵 Sesi Çıkar ve İşle</button>';
+        '<button onclick="switchVideoTab(\'audio\'); videoStartPipeline(true);" style="padding:8px 16px;background:rgba(74,222,128,0.12);border:1px solid #22c55e;color:#4ade80;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">🎵 Sesi Çıkar ve İşle</button>';
     }
     return;
   }
