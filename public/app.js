@@ -354,6 +354,34 @@ async function handleVStepAction(action, step, btn) {
     }
     return;
   }
+  if (action === 'resume-from') {
+    var fromStep = parseInt(step);
+    var remaining = 10 - fromStep;
+    if (!confirm('Adım ' + step + ' çıktısından itibaren devam edilecek.\n' + remaining + ' adım yeniden işlenecek.\n\nDevam edilsin mi?')) return;
+
+    // localStorage'daki pipeline state'i güncelle: fromStep'ten sonrasını temizle
+    try {
+      var lsRaw = localStorage.getItem('video_pipeline_state');
+      var lsState = lsRaw ? JSON.parse(lsRaw) : {};
+      var completed = lsState.completedSteps || {};
+      for (var ri = fromStep + 1; ri <= 10; ri++) {
+        delete completed[String(ri)];
+      }
+      lsState.completedSteps = completed;
+      localStorage.setItem('video_pipeline_state', JSON.stringify(lsState));
+    } catch(e) {}
+
+    // videoState üzerinde de güncelle (aynı session içindeyse geçerli)
+    if (videoState._completedSteps) {
+      for (var ri2 = fromStep + 1; ri2 <= 10; ri2++) {
+        delete videoState._completedSteps[String(ri2)];
+      }
+    }
+
+    // Pipeline'ı yeniden başlat (fromStep'e kadar önbellekten gelir, sonrası çalışır)
+    videoStartPipeline();
+    return;
+  }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -749,14 +777,20 @@ async function videoStartPipeline() {
     // Adım 8 (VAD), 9 (Diarize), 10 (Kesim haritası) ses dosyası üretmez → onlarda ses butonu gösterme.
     var nStr = String(num);
     var hasAudio = isDone && nStr !== '8' && nStr !== '9' && nStr !== '10';
+    var canResume = isDone && nStr !== '10';  // 10 sonrası adım yok
     var btnsHtml = '';
-    if (hasAudio) {
+    if (hasAudio || canResume) {
       var btnStyle = 'background:rgba(255,255,255,0.04);border:1px solid #334155;border-radius:5px;cursor:pointer;font-size:11px;padding:3px 9px;margin-left:6px;white-space:nowrap';
-      btnsHtml =
-        '<button data-vstep-action="audio-listen" data-vstep="' + num + '" style="' + btnStyle + ';color:#38bdf8" title="Bu adımdaki sesi dinle">🔊 Sesi Dinle</button>' +
-        '<button data-vstep-action="audio-dl" data-vstep="' + num + '" style="' + btnStyle + ';color:#4ade80" title="Bu adımdaki sesi indir">⬇ Sesi İndir</button>' +
-        '<button data-vstep-action="video-watch" data-vstep="' + num + '" style="' + btnStyle + ';color:#a78bfa" title="Bu adımdaki sesle videoyu izle (~3-5 dk merge)">▶ Video İzle</button>' +
-        '<button data-vstep-action="video-dl" data-vstep="' + num + '" style="' + btnStyle + ';color:#f59e0b" title="Bu adımdaki sesle videoyu indir (~3-5 dk merge)">💾 Video İndir</button>';
+      if (hasAudio) {
+        btnsHtml =
+          '<button data-vstep-action="audio-listen" data-vstep="' + num + '" style="' + btnStyle + ';color:#38bdf8" title="Bu adımdaki sesi dinle">🔊 Sesi Dinle</button>' +
+          '<button data-vstep-action="audio-dl" data-vstep="' + num + '" style="' + btnStyle + ';color:#4ade80" title="Bu adımdaki sesi indir">⬇ Sesi İndir</button>' +
+          '<button data-vstep-action="video-watch" data-vstep="' + num + '" style="' + btnStyle + ';color:#a78bfa" title="Bu adımdaki sesle videoyu izle (~3-5 dk merge)">▶ Video İzle</button>' +
+          '<button data-vstep-action="video-dl" data-vstep="' + num + '" style="' + btnStyle + ';color:#f59e0b" title="Bu adımdaki sesle videoyu indir (~3-5 dk merge)">💾 Video İndir</button>';
+      }
+      if (canResume) {
+        btnsHtml += '<button data-vstep-action="resume-from" data-vstep="' + num + '" style="' + btnStyle + ';color:#fb923c" title="Bu adımın çıktısından itibaren sonraki seçili adımlara devam et">↺ Devam Et</button>';
+      }
     }
 
     var rowHtml =
