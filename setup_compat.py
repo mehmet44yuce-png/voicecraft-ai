@@ -183,6 +183,22 @@ def fix_resemble_deepspeed():
     if not RE_BASE.exists():
         log("resemble_enhance bulunamadi — atlaniyor.")
         return
+
+    # distributed.py bozuk durum duzeltme (coklu if _has_deepspeed: birikimi)
+    dist_py = RE_BASE / "utils" / "distributed.py"
+    if dist_py.exists():
+        txt = dist_py.read_text(encoding="utf-8")
+        import re as _re
+        broken = _re.search(r'if _has_deepspeed:\s*\n(\s+if _has_deepspeed:\s*\n)+', txt)
+        if broken:
+            txt = _re.sub(
+                r'(if _has_deepspeed:\s*\n)+(\s+deepspeed\.init_distributed)',
+                r'if _has_deepspeed:\n        deepspeed.init_distributed',
+                txt
+            )
+            dist_py.write_text(txt, encoding="utf-8")
+            log("resemble_enhance/distributed.py: bozuk coklu-if duzeltildi.")
+
     for fpath, old, new in PATCHES:
         if not fpath.exists():
             continue

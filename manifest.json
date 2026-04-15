@@ -1,18 +1,13 @@
 {
-  "version": "1.1.3",
+  "version": "1.1.4",
   "release_date": "2026-04-15",
   "min_version": "1.0.0",
-  "changelog": "Admin panel: Ollama model secimi eklendi, dinamik model listesi",
+  "changelog": "setup_compat: Resemble distributed.py bozuk coklu-if otomatik duzeltilir",
   "files": {
-    "server.py": {
-      "sha256": "57c43a051c348a101646e10c47a6884c67ba3dc59c77170a023ff6f08b33f5f2",
-      "size": 210780,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.3/server.py"
-    },
-    "public/admin.html": {
-      "sha256": "2a9088ffa09373e85b8827d358d91556c2bcda40423441bb925b0249e8f2b639",
-      "size": 117484,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.3/admin.html"
+    "setup_compat.py": {
+      "sha256": "22c403609dc444bc23157ee6ccd13e744b2ab01e3ce26389f861ad9c0174d3ee",
+      "size": 13451,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.4/setup_compat.py"
     }
   },
   "delete": []
