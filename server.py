@@ -2227,6 +2227,34 @@ def get_config():
     hf_token = os.environ.get('HF_TOKEN', '')
     return jsonify({'hf_token': hf_token})
 
+@app.route('/api/config/save', methods=['POST'])
+def save_config():
+    """HF Token'i .env dosyasına kaydet."""
+    data = request.get_json(force=True) or {}
+    hf_token = data.get('hf_token', '').strip()
+    if not hf_token:
+        return jsonify({'error': 'Token bos'}), 400
+
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    lines = []
+    found = False
+    if os.path.exists(env_path):
+        with open(env_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.startswith('HF_TOKEN='):
+                    lines.append(f'HF_TOKEN={hf_token}\n')
+                    found = True
+                else:
+                    lines.append(line)
+    if not found:
+        lines.append(f'HF_TOKEN={hf_token}\n')
+
+    with open(env_path, 'w', encoding='utf-8') as f:
+        f.writelines(lines)
+
+    os.environ['HF_TOKEN'] = hf_token
+    return jsonify({'ok': True})
+
 # ── Frontend Debug ────────────────────────────────────────────────────────────
 _frontend_state = {}
 

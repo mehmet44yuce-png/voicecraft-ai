@@ -1379,7 +1379,22 @@ async function runTests_settings() {
   updateBadge('settings', results);
 }
 
-function saveHfToken() { localStorage.setItem('hf_token', document.getElementById('hf-token-input').value); alert('Token kaydedildi (localStorage)'); }
+function saveHfToken() {
+  var token = document.getElementById('hf-token-input').value.trim();
+  if (!token) { alert('Token bos!'); return; }
+  fetch('/api/config/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ hf_token: token })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      localStorage.setItem('hf_token', token);
+      alert('HF Token kaydedildi (.env)');
+    } else {
+      alert('Hata: ' + (d.error || 'bilinmiyor'));
+    }
+  }).catch(function(e) { alert('Sunucu hatasi: ' + e); });
+}
 function saveDefaultSteps() {
   var obj = {};
   document.querySelectorAll('#default-steps input[data-step]').forEach(function(inp) { obj[inp.dataset.step] = inp.checked; });

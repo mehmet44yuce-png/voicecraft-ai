@@ -36,6 +36,11 @@ def copy_app_files():
     if os.path.exists(env_file):
         shutil.copy2(env_file, DIST)
 
+    # .env.default (HF token gömülü — gitignore'da, ZIP'e dahil edilir)
+    env_default = os.path.join(ROOT, '.env.default')
+    if os.path.exists(env_default):
+        shutil.copy2(env_default, DIST)
+
     # .env.example
     env_ex = os.path.join(ROOT, '.env.example')
     if os.path.exists(env_ex):
