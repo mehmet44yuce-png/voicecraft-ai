@@ -501,7 +501,7 @@ def ensure_valid_structure(a: dict, duration: float) -> dict:
 
 
 OLLAMA_URL   = 'http://localhost:11434/api/generate'
-OLLAMA_MODEL = 'mistral-nemo:12b'
+OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'mistral-nemo:12b')
 
 
 def ollama_generate(system: str, prompt: str) -> str:
@@ -2225,34 +2225,48 @@ def analyze_audio():
 @app.route('/api/config', methods=['GET'])
 def get_config():
     hf_token = os.environ.get('HF_TOKEN', '')
-    return jsonify({'hf_token': hf_token})
+    ollama_model = os.environ.get('OLLAMA_MODEL', OLLAMA_MODEL)
+    return jsonify({'hf_token': hf_token, 'ollama_model': ollama_model})
 
 @app.route('/api/config/save', methods=['POST'])
 def save_config():
-    """HF Token'i .env dosyasına kaydet."""
+    """HF Token ve Ollama model seçimini .env dosyasına kaydet."""
+    global OLLAMA_MODEL
     data = request.get_json(force=True) or {}
-    hf_token = data.get('hf_token', '').strip()
-    if not hf_token:
-        return jsonify({'error': 'Token bos'}), 400
+
+    updates = {}
+    if 'hf_token' in data and data['hf_token'].strip():
+        updates['HF_TOKEN'] = data['hf_token'].strip()
+    if 'ollama_model' in data and data['ollama_model'].strip():
+        updates['OLLAMA_MODEL'] = data['ollama_model'].strip()
+
+    if not updates:
+        return jsonify({'error': 'Kaydedilecek veri yok'}), 400
 
     env_path = os.path.join(os.path.dirname(__file__), '.env')
     lines = []
-    found = False
+    found_keys = set()
     if os.path.exists(env_path):
         with open(env_path, 'r', encoding='utf-8') as f:
             for line in f:
-                if line.startswith('HF_TOKEN='):
-                    lines.append(f'HF_TOKEN={hf_token}\n')
-                    found = True
+                key = line.split('=')[0] if '=' in line else ''
+                if key in updates:
+                    lines.append(f'{key}={updates[key]}\n')
+                    found_keys.add(key)
                 else:
                     lines.append(line)
-    if not found:
-        lines.append(f'HF_TOKEN={hf_token}\n')
+    for key, val in updates.items():
+        if key not in found_keys:
+            lines.append(f'{key}={val}\n')
 
     with open(env_path, 'w', encoding='utf-8') as f:
         f.writelines(lines)
 
-    os.environ['HF_TOKEN'] = hf_token
+    for key, val in updates.items():
+        os.environ[key] = val
+    if 'OLLAMA_MODEL' in updates:
+        OLLAMA_MODEL = updates['OLLAMA_MODEL']
+
     return jsonify({'ok': True})
 
 # ── Frontend Debug ────────────────────────────────────────────────────────────

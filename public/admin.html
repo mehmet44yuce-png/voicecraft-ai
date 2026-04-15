@@ -389,6 +389,15 @@ function copyUpdateError(){
       <input type="text" id="hf-token-input" placeholder="hf_..." style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:6px 10px;font-size:12px;outline:none">
       <button class="btn" onclick="saveHfToken()">Kaydet</button>
     </div>
+    <h4 style="font-size:13px;margin-bottom:8px">Ollama Model</h4>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <select id="ollama-model-select" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:6px 10px;font-size:12px;outline:none">
+        <option value="">-- Yükleniyor... --</option>
+      </select>
+      <button class="btn btn-sm" onclick="loadOllamaModels()" title="Modelleri yenile" style="padding:6px 10px">↻</button>
+      <button class="btn" onclick="saveOllamaModel()">Kaydet</button>
+    </div>
+    <div id="ollama-model-status" style="font-size:11px;color:var(--dim);margin-top:-12px;margin-bottom:12px"></div>
     <h4 style="font-size:13px;margin-bottom:8px">Varsayılan Pipeline Adımları</h4>
     <div id="default-steps" style="margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:2px"></div>
     <h4 style="font-size:13px;margin-bottom:8px">Ses Analizi Parametreleri</h4>
@@ -1342,6 +1351,8 @@ async function runTests_settings() {
       results.push({ name: 'HF Token', status: tok.length >= 20 ? 'pass' : 'warn', detail: tok.length + ' karakter' });
     }
   } catch(e) { results.push({ name: 'GET /api/config', status: 'fail', detail: e.message }); }
+  // Ollama modelleri yukle
+  loadOllamaModels();
   // localStorage
   try { localStorage.setItem('_test', '1'); localStorage.removeItem('_test'); results.push({ name: 'localStorage', status: 'pass', detail: 'Yazılabilir' }); }
   catch(e) { results.push({ name: 'localStorage', status: 'fail', detail: e.message }); }
@@ -1390,6 +1401,58 @@ function saveHfToken() {
     if (d.ok) {
       localStorage.setItem('hf_token', token);
       alert('HF Token kaydedildi (.env)');
+    } else {
+      alert('Hata: ' + (d.error || 'bilinmiyor'));
+    }
+  }).catch(function(e) { alert('Sunucu hatasi: ' + e); });
+}
+
+function loadOllamaModels() {
+  var sel = document.getElementById('ollama-model-select');
+  var status = document.getElementById('ollama-model-status');
+  sel.innerHTML = '<option value="">-- Yükleniyor... --</option>';
+  status.textContent = '';
+  fetch('/api/models').then(function(r) { return r.json(); }).then(function(d) {
+    sel.innerHTML = '';
+    if (!d.success || !d.models.length) {
+      sel.innerHTML = '<option value="">Ollama bulunamadi veya model yok</option>';
+      status.textContent = d.error || 'Ollama calismiyor olabilir';
+      status.style.color = '#f87171';
+      return;
+    }
+    d.models.forEach(function(m) {
+      var opt = document.createElement('option');
+      opt.value = m; opt.textContent = m;
+      sel.appendChild(opt);
+    });
+    // Mevcut secili modeli isaretله
+    fetch('/api/config').then(function(r) { return r.json(); }).then(function(cfg) {
+      var current = cfg.ollama_model || '';
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === current) { sel.selectedIndex = i; break; }
+      }
+      if (current) status.textContent = 'Aktif model: ' + current;
+      status.style.color = 'var(--dim)';
+    });
+  }).catch(function(e) {
+    sel.innerHTML = '<option value="">Hata</option>';
+    status.textContent = 'Baglanti hatasi: ' + e;
+    status.style.color = '#f87171';
+  });
+}
+
+function saveOllamaModel() {
+  var sel = document.getElementById('ollama-model-select');
+  var model = sel.value;
+  if (!model) { alert('Model seciniz!'); return; }
+  fetch('/api/config/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ollama_model: model })
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      document.getElementById('ollama-model-status').textContent = 'Kaydedildi: ' + model;
+      document.getElementById('ollama-model-status').style.color = '#4ade80';
     } else {
       alert('Hata: ' + (d.error || 'bilinmiyor'));
     }
