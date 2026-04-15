@@ -74,6 +74,21 @@ if not hasattr(ta, 'info'):
                              num_channels=info.channels, bits_per_sample=16, encoding='PCM_S')
     ta.info = _ta_info
 
+if not hasattr(ta, '_original_load'):
+    import soundfile as _sf2
+    import torch as _torch
+    ta._original_load = ta.load
+    def _ta_load(file, frame_offset=0, num_frames=-1, **kwargs):
+        try:
+            return ta._original_load(file, frame_offset=frame_offset, num_frames=num_frames, **kwargs)
+        except Exception:
+            data, sr = _sf2.read(file, dtype='float32', always_2d=True,
+                                 start=frame_offset,
+                                 stop=None if num_frames < 0 else frame_offset + num_frames)
+            tensor = _torch.from_numpy(data.T)
+            return tensor, sr
+    ta.load = _ta_load
+
 """
 
 
@@ -89,10 +104,25 @@ def fix_deepfilter():
         changed = True
         log("df/io.py: AudioMetaData stub eklendi.")
 
-    if "if not hasattr(ta, 'info')" not in txt:
+    # Inject full monkey-patch block if either part is missing
+    need_info = "if not hasattr(ta, 'info')" not in txt
+    need_load = "if not hasattr(ta, '_original_load')" not in txt
+    if need_info or need_load:
+        # Strip any old partial inject before re-injecting full block
+        old_partial = (
+            "if not hasattr(ta, 'info'):\n"
+            "    import soundfile as _sf\n"
+            "    def _ta_info(file, **kwargs):\n"
+            "        info = _sf.info(file)\n"
+            "        return AudioMetaData(sample_rate=info.samplerate, num_frames=info.frames,\n"
+            "                             num_channels=info.channels, bits_per_sample=16, encoding='PCM_S')\n"
+            "    ta.info = _ta_info\n\n"
+        )
+        if old_partial in txt:
+            txt = txt.replace(old_partial, "")
         txt = txt.replace(DF_IO_ANCHOR, DF_IO_INJECT + DF_IO_ANCHOR)
         changed = True
-        log("df/io.py: ta.info monkey-patch eklendi.")
+        log("df/io.py: ta.info + ta.load monkey-patch eklendi.")
 
     if changed:
         DF_IO.write_text(txt, encoding="utf-8")
