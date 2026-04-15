@@ -1,13 +1,13 @@
 {
-  "version": "1.1.4",
+  "version": "1.1.5",
   "release_date": "2026-04-15",
   "min_version": "1.0.0",
-  "changelog": "setup_compat: Resemble distributed.py bozuk coklu-if otomatik duzeltilir",
+  "changelog": "CLAUDE.md guncellendi: Setup.bat otomatik kurulum, admin panel HF/Ollama, Resemble yamasi",
   "files": {
-    "setup_compat.py": {
-      "sha256": "22c403609dc444bc23157ee6ccd13e744b2ab01e3ce26389f861ad9c0174d3ee",
-      "size": 13451,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.4/setup_compat.py"
+    "CLAUDE.md": {
+      "sha256": "824132c651ffa4bf2a786664db61f22afb0b88ffb4f4b46df87ce6e2c9ee4bfc",
+      "size": 18245,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.5/CLAUDE.md"
     }
   },
   "delete": []

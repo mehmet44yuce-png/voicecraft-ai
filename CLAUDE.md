@@ -21,7 +21,11 @@ python server.py
 ## Dosya Yapisi
 ```
 server.py             — Flask backend (3900+ satir, tum API'ler)
-.env                  — Ortam degiskenleri (HF_TOKEN, ANTHROPIC_API_KEY)
+.env                  — Ortam degiskenleri (HF_TOKEN, ANTHROPIC_API_KEY, OLLAMA_MODEL)
+.env.default          — Dagitim icin varsayilan HF_TOKEN (gitignore'da, ZIP'e dahil edilir)
+setup_compat.py       — Kurulum sonrasi uyumluluk yamalari (Resemble, DeepFilter vb.)
+add_to_startup.py     — Windows otomatik baslama kaydeder (Task Scheduler veya Startup klasoru)
+launcher.py           — Sunucu baslatici (guncelleme kontrol + restart loop + sistem tepsisi)
 src/server.ts         — Express yedek sunucu (kullanilmiyor normalde)
 public/
   index.html          — Ana sayfa (Ses + Video modulleri, 4 sekme)
@@ -89,13 +93,15 @@ audio-yazar adimdan IndexedDB'deki `video_step_N`'i yukler.
 - 9 sekme: Sistem Durumu, Proje Yonetimi, Veritabani, Model Yonetimi, Islem Ayarlari, Hata Gecmisi, Sunucu Loglari, Raporlar, TTS Test, Yedekleme
 - Yedekleme: IndexedDB (7 store) + dosya export JSON olarak
 - Pipeline adimlari checkbox'lari (13 adim)
-- HF Token yonetimi
+- **HF Token:** Admin → Islem Ayarlari → giris + Kaydet → `.env` dosyasina kalici yazar (`/api/config/save`)
+- **Ollama Model secimi:** Admin → Islem Ayarlari → yüklü modeller otomatik listelenir → sec + Kaydet → aninda aktif (sunucu restart gerekmez)
 
 ## Onemli API Endpoint'leri
 | Endpoint | Metod | Aciklama |
 |----------|-------|----------|
 | /api/system-stats | GET | CPU, RAM, GPU, disk |
-| /api/config | GET | HF token, model ayarlari |
+| /api/config | GET | HF token, ollama_model doner |
+| /api/config/save | POST | HF Token ve/veya Ollama model `.env`'e kaydeder |
 | /api/server-log | GET | Sunucu loglari |
 | /api/transcribe/start | POST | Whisper (async job) |
 | /api/denoise | POST | Demucs vokal izolasyon |
@@ -133,6 +139,7 @@ Bu yamalar yeni ortamda tekrar yapilmali (venv yeniden olusturulursa kaybolur).
   - `.venv/.../resemble_enhance/utils/engine.py`
   - `.venv/.../resemble_enhance/enhancer/train.py`
   - `.venv/.../resemble_enhance/denoiser/train.py`
+→ **`setup_compat.py` bu yamalari otomatik uygular.** Bozuk `distributed.py` (coklu `if _has_deepspeed:` birikimi) de otomatik duzeltilir.
 
 ### Resemble Enhance — model indirme (Git LFS)
 Model `pip install` ile gelmez, git clone gerekir:
@@ -261,7 +268,14 @@ Script otomatik: degisen dosyalari tespit eder → manifest yazar → commit + p
 - `installer/build_portable.py` — portable paket olusturur
 - `installer/create_manual_pdf.py` — PDF kilavuz olusturur (v2 pipeline sirasi)
 - `installer/launcher.py` — baslat + guncelleme kontrol + restart loop
-- `Setup.bat` — 6 adimli kurulum sihirbazi: 1.Python 3.12 → 2.FFmpeg → 3.PyTorch cu128 → 4.AI paketleri → 5.HF Token → 6.Tamamlandi
+- `Setup.bat` — Tam otomatik kurulum sihirbazi:
+  1. Python 3.12 yoksa → `winget` ile kurar, olmazsa python.org'dan indirir
+  2. FFmpeg yoksa → `winget` ile kurar
+  3. Virtual environment olusturur
+  4. PyTorch cu128 + tum AI paketleri kurulur (`installer/setup_packages.py`)
+  5. Uyumluluk yamalari uygulanir (`setup_compat.py`)
+  6. `.env.default` varsa `.env`'e kopyalar (HF Token otomatik)
+  7. Otomatik baslama kaydedilir (`add_to_startup.py`)
 - `VoiceCraft-AI.bat` — calistir (CUDA_VISIBLE_DEVICES= ile GPU yoksa hata onleme)
 - Masaustu kisayolu otomatik olusturulur
 - GPU yoksa otomatik CPU PyTorch, DLL hatasi → eski versiyon fallback
