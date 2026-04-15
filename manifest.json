@@ -1,28 +1,13 @@
 {
-  "version": "1.1.7",
+  "version": "1.1.8",
   "release_date": "2026-04-15",
   "min_version": "1.0.0",
-  "changelog": "Updater GitHub API kullanir CDN cache sorunu giderildi; video AV sync, Devam Et butonu, pipeline fresh start",
+  "changelog": "Admin panel: layout duzeltme (update bar solda cikiyordu), Guncelleme Kontrol Et butonu",
   "files": {
-    "public/app.js": {
-      "sha256": "e869ea1cc9884bfe0037d436b46c9d7e5a8e9938008396bb7c1b9885aee5e36e",
-      "size": 568987,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.7/app.js"
-    },
-    "public/index.html": {
-      "sha256": "1a256ff942fe5d6bc37781ea7f17ed087ba4ca496d700eb0a366e360572750b0",
-      "size": 36496,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.7/index.html"
-    },
-    "server.py": {
-      "sha256": "6bf28f7cecb66491753108924c92d102903f7a7520bea55cb608c8797b0d502a",
-      "size": 212111,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.7/server.py"
-    },
-    "updater.py": {
-      "sha256": "d22aec6fe4f93ce1c7a08949738d0121f31719a651000a0bc514dc22882681c4",
-      "size": 16382,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.7/updater.py"
+    "public/admin.html": {
+      "sha256": "277cfe22b80a109120836706a46af07d95dcb476b840b3d1c0662febad345424",
+      "size": 118902,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.8/admin.html"
     }
   },
   "delete": []

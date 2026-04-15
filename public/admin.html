@@ -13,7 +13,8 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0a0e1a;--bg2:#111827;--bg3:#1e293b;--border:#334155;--text:#e2e8f0;--dim:#64748b;--accent:#3b82f6;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--purple:#a855f7}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;min-width:1024px;font-size:13px}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;min-height:100vh;min-width:1024px;font-size:13px}
+.main-layout{display:flex;flex:1;overflow:hidden}
 
 /* Sol Sekme Çubuğu */
 .sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh}
@@ -254,6 +255,25 @@ function applyUpdate(){
     },2000);
   }).catch(function(e){alert('Baglanti hatasi: '+e.message);});
 }
+function checkUpdateManual(){
+  var btn=document.getElementById('btn-check-update');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Kontrol ediliyor...';}
+  fetch('/api/update/check').then(function(r){return r.json();}).then(function(d){
+    if(d.success && d.update){
+      var bar=document.getElementById('update-bar');
+      var txt=document.getElementById('update-bar-text');
+      if(bar) bar.style.display='block';
+      if(txt) txt.textContent='v'+d.update.new_version+' mevcut — '+d.update.files_to_update+' dosya degismis'+(d.update.changelog?' | '+d.update.changelog:'');
+      if(btn){btn.disabled=false;btn.textContent='🔄 Güncelleme Kontrol Et';}
+    } else {
+      if(btn){btn.disabled=false;btn.textContent='✓ Güncel ('+new Date().toLocaleTimeString('tr')+')';}
+      setTimeout(function(){if(btn)btn.textContent='🔄 Güncelleme Kontrol Et';},3000);
+    }
+  }).catch(function(e){
+    if(btn){btn.disabled=false;btn.textContent='⚠ Hata';}
+    setTimeout(function(){if(btn)btn.textContent='🔄 Güncelleme Kontrol Et';},3000);
+  });
+}
 function copyUpdateError(){
   var prog=document.getElementById('update-bar-progress');
   var txt=document.getElementById('update-bar-text');
@@ -268,6 +288,7 @@ function copyUpdateError(){
 }
 </script>
 
+<div class="main-layout">
 <!-- Sol Sekme Çubuğu -->
 <nav class="sidebar">
   <div class="sidebar-logo">
@@ -298,7 +319,7 @@ function copyUpdateError(){
   <section id="s-system" class="panel active">
     <div class="panel-header">
       <h3>📊 Sistem Durumu</h3>
-      <div><span class="meta" id="system-time"></span> <button class="btn btn-sm" onclick="runTests_system()">● Yenile</button></div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="meta" id="system-time"></span> <button class="btn btn-sm" onclick="runTests_system()">● Yenile</button><button class="btn btn-sm" id="btn-check-update" onclick="checkUpdateManual()" style="border-color:#22c55e;color:#4ade80">🔄 Güncelleme Kontrol Et</button></div>
     </div>
     <div class="metrics" id="system-metrics"></div>
     <div style="margin-bottom:12px">
@@ -2159,5 +2180,6 @@ function updateBackupInfo() {
 // Yedek paneli açıldığında bilgileri güncelle
 updateBackupInfo();
 </script>
+</div><!-- /.main-layout -->
 </body>
 </html>
