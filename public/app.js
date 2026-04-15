@@ -1210,7 +1210,12 @@ async function videoStartPipeline(forceRestart) {
 
       if (allSpeech.length > 0) {
         var totalDur = videoState.audioBuffer ? videoState.audioBuffer.duration : 0;
-        var pad = 0.10;
+        // pad: her konuşma segmentinin başına ve sonuna eklenen nefes payı (sn).
+        // 0.45s → bitişik segmentler arası <0.9s boşluk birleşir; daha uzun boşluklarda
+        // sadece ortası kesilir, her iki tarafta 0.45s doğal duraklama kalır.
+        var pad = 0.45;
+        // minCut: bu süreden kısa kalan boşluklar kesilmez (geçişi yumuşatır).
+        var minCut = 0.25;
         var padded = allSpeech.map(function(s) { return { start: Math.max(0, s.start - pad), end: Math.min(totalDur, s.end + pad) }; }).sort(function(a,b) { return a.start - b.start; });
         var merged = [padded[0]];
         for (var i = 1; i < padded.length; i++) {
@@ -1221,7 +1226,7 @@ async function videoStartPipeline(forceRestart) {
         var cutSegs = [];
         var cursor = 0;
         merged.forEach(function(seg) {
-          if (seg.start > cursor + 0.05) cutSegs.push({ action: 'delete', start: +cursor.toFixed(3), end: +seg.start.toFixed(3) });
+          if (seg.start > cursor + minCut) cutSegs.push({ action: 'delete', start: +cursor.toFixed(3), end: +seg.start.toFixed(3) });
           cursor = seg.end;
         });
         if (totalDur && cursor < totalDur - 0.05) cutSegs.push({ action: 'delete', start: +cursor.toFixed(3), end: +totalDur.toFixed(3) });

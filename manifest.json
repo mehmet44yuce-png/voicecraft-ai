@@ -1,13 +1,13 @@
 {
-  "version": "1.1.8",
+  "version": "1.1.9",
   "release_date": "2026-04-15",
   "min_version": "1.0.0",
-  "changelog": "Admin panel: layout duzeltme (update bar solda cikiyordu), Guncelleme Kontrol Et butonu",
+  "changelog": "Video kesim: konusmaci nefes payi arttirildi (pad 100ms->450ms, minCut 250ms)",
   "files": {
-    "public/admin.html": {
-      "sha256": "277cfe22b80a109120836706a46af07d95dcb476b840b3d1c0662febad345424",
-      "size": 118902,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.8/admin.html"
+    "public/app.js": {
+      "sha256": "9d469d952121c219da95a1b54369d708faf1d8d4ed614f7e54346927880aaa95",
+      "size": 569372,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.9/app.js"
     }
   },
   "delete": []
