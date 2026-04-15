@@ -1,28 +1,13 @@
 {
-  "version": "1.1.1",
+  "version": "1.1.2",
   "release_date": "2026-04-15",
   "min_version": "1.0.0",
-  "changelog": "Admin panel: HF Token .env dosyasina kaydedilir, Setup.bat otomatik HF Token ve startup ayarlar",
+  "changelog": "Setup.bat: Python ve FFmpeg otomatik kurulum eklendi",
   "files": {
-    "server.py": {
-      "sha256": "1860e6f1faa9000800a330475b65b26c02655cf578daddb5432b60cfa18abf29",
-      "size": 210149,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.1/server.py"
-    },
-    "public/admin.html": {
-      "sha256": "ebd551de97e6c75271ac1235461eedadbfb426e27e8fa12548a4d70109c5d2bc",
-      "size": 114598,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.1/admin.html"
-    },
-    "installer/build_portable.py": {
-      "sha256": "5b21dc1717416625f697fbed5adc6eacdb8b6fe7bada90b2d75ba6cb8a6bebb8",
-      "size": 10975,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.1/build_portable.py"
-    },
     "Setup.bat": {
-      "sha256": "c7edc52b5249b6e6b41c28e3a23183ad587ffdba84591b5c4e6b59fcf9e73ec8",
-      "size": 2782,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.1/Setup.bat"
+      "sha256": "1f98377561ea19c6ad02454321732b7e87cbae2801e96b633fe98fcad12cb947",
+      "size": 5059,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.2/Setup.bat"
     }
   },
   "delete": []
