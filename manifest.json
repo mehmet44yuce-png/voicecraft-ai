@@ -1,13 +1,13 @@
 {
-  "version": "1.2.1",
+  "version": "1.2.2",
   "release_date": "2026-04-16",
   "min_version": "1.0.0",
-  "changelog": "launcher: sunucu zaten cal\u0131s\u0131yorsa sadece taray\u0131c\u0131 ac, cmd start ile varsayilan taray\u0131c\u0131",
+  "changelog": "CLAUDE.md: launcher davranislari eklendi",
   "files": {
-    "launcher.py": {
-      "sha256": "b7a7732744f33c2926ee9e8f73f82635f3e5727835742d73cac5d80872f6cdc1",
-      "size": 7903,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.2.1/launcher.py"
+    "CLAUDE.md": {
+      "sha256": "024afd7b2ecbbc789c51ec22e0af8c671bb5efa422493a64d522bb55e4cbb769",
+      "size": 18439,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.2.2/CLAUDE.md"
     }
   },
   "delete": []
