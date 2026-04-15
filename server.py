@@ -2554,7 +2554,8 @@ def html_to_pdf():
         if not browser:
             raise RuntimeError('Edge veya Chrome bulunamadı')
         r = subprocess.run([
-            browser, '--headless', '--disable-gpu', '--no-sandbox',
+            browser, '--headless=new', '--disable-gpu', '--no-sandbox',
+            '--disable-extensions', '--no-first-run',
             f'--print-to-pdf={tmp_pdf}', '--print-to-pdf-no-header',
             f'file:///{tmp_html.replace(os.sep, "/")}'
         ], capture_output=True, timeout=30)
