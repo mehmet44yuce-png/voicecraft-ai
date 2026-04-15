@@ -33,6 +33,14 @@ import urllib.error
 import mimetypes
 from pathlib import Path
 
+# Windows konsol UTF-8'e zorla
+if sys.platform == 'win32':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 # ── Yapilandirma ─────────────────────────────────────────────────────────────
 REPO_OWNER = 'mehmet44yuce-png'
 REPO_NAME = 'voicecraft-ai'
@@ -180,7 +188,7 @@ def main():
     changelog = sys.argv[2]
     explicit_files = sys.argv[3:] if len(sys.argv) > 3 else None
 
-    print(f'═══ VoiceCraft AI Release v{version} ═══')
+    print(f'=== VoiceCraft AI Release v{version} ===')
     print(f'Changelog: {changelog}')
     print()
 
@@ -204,7 +212,7 @@ def main():
         sys.exit(f'HATA: Dosya adi cakismasi (release flat namespace): {duplicates}')
 
     for f in files:
-        print(f'  • {f}')
+        print(f'  - {f}')
     print()
 
     # 2. Manifest olustur
@@ -273,20 +281,20 @@ def main():
                 data = resp.read()
             actual = hashlib.sha256(data).hexdigest()
             if actual == info['sha256']:
-                print(f'    ✓ {fp}')
+                print(f'    [OK] {fp}')
             else:
-                print(f'    ✗ {fp} HASH UYUMSUZ!')
+                print(f'    [FAIL] {fp} HASH UYUMSUZ!')
                 all_ok = False
         except Exception as e:
-            print(f'    ✗ {fp} indirilemedi: {e}')
+            print(f'    [FAIL] {fp} indirilemedi: {e}')
             all_ok = False
 
     print()
     if all_ok:
-        print(f'🎉 RELEASE BASARILI: v{version}')
-        print(f'   https://github.com/{REPO_OWNER}/{REPO_NAME}/releases/tag/v{version}')
+        print(f'*** RELEASE BASARILI: v{version} ***')
+        print(f'    https://github.com/{REPO_OWNER}/{REPO_NAME}/releases/tag/v{version}')
     else:
-        print(f'⚠ RELEASE OLUSTU AMA HASH SORUNU VAR — manuel kontrol et')
+        print(f'!!! RELEASE OLUSTU AMA HASH SORUNU VAR - manuel kontrol et')
 
 
 if __name__ == '__main__':

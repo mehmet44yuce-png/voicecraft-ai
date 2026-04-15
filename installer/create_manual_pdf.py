@@ -183,12 +183,12 @@ def build():
 
     steps = [
         ['Adim', 'Islem', 'Sure'],
-        ['1/6', 'Python 3.12 kurulumu', '2-3 dk'],
-        ['2/6', 'FFmpeg kurulumu', '1 dk'],
-        ['3/6', 'PyTorch + CUDA (GPU destegi)', '5-10 dk'],
-        ['4/6', 'AI modelleri (Whisper, Demucs, vs.)', '5-15 dk'],
-        ['5/6', 'Ayarlar (HuggingFace Token)', '1 dk'],
-        ['6/6', 'Kurulum tamamlandi!', '-'],
+        ['1/6', 'Python 3.12 kurulumu (PATH otomatik eklenir)', '2-3 dk'],
+        ['2/6', 'FFmpeg kurulumu (video/ses isleme icin)', '1 dk'],
+        ['3/6', 'PyTorch cu128 — RTX 40/50 serisi GPU destegi', '5-10 dk'],
+        ['4/6', 'AI paketleri (Whisper, Demucs, DeepFilter, vs.)', '5-15 dk'],
+        ['5/6', 'HuggingFace Token ayari (Diarize icin gerekli)', '1 dk'],
+        ['6/6', 'Kurulum tamamlandi — VoiceCraft-AI.bat calistir!', '-'],
     ]
     step_table = Table(steps, colWidths=[2*cm, 8*cm, 3*cm])
     step_table.setStyle(TableStyle([
@@ -330,16 +330,16 @@ def build():
 
     vpipe_data = [
         ['#', 'Adim', 'Aciklama'],
-        ['1', 'Whisper', 'Video sesini yaziya cevirir'],
-        ['2', 'Demucs', 'Vokal izolasyonu'],
-        ['3', 'NoiseReduce', 'Gurultu bastirma (GPU)'],
-        ['4', 'DNS64', 'Anlik gurultu temizleme'],
-        ['5', 'SpeechOnly', 'Konusma disi ses temizleme'],
-        ['6', 'VAD', 'Sessizlik haritasi'],
-        ['7', 'Diarize', 'Konusmaci tespiti'],
-        ['8', 'Normalize', 'Ses seviyesi dengeleme'],
-        ['9', 'Kesim', 'Sessiz bolgeleri kes'],
-        ['10', 'DeepFilter', 'Derin filtreleme (opsiyonel)'],
+        ['1', 'Whisper', 'Video sesini yaziya cevirir (transkript, sadece okur)'],
+        ['2', 'Demucs', 'Vokal izolasyonu — arka plan muzik/gurultu ayrilir'],
+        ['3', 'NoiseReduce', 'Frekans bazli gurultu bastirma (GPU, async)'],
+        ['4', 'DNS64', 'Anlik gurultuleri siler (oksuruk, tikirtı vs.)'],
+        ['5', 'SpeechOnly', 'Konusma disi sesleri temizler'],
+        ['6', 'Normalize', 'Konusmaci ses seviyelerini dengeler'],
+        ['7', 'DeepFilterNet', 'Derin sinir agi filtresi (son temizlik)'],
+        ['8', 'VAD', 'TEMIZ ses uzerinden sessizlik haritasi cikar'],
+        ['9', 'Diarize', 'TEMIZ ses uzerinden konusmaci tespiti'],
+        ['10', 'Kesim Haritasi', 'VAD+Diarize birlestirip sessiz bolgeleri keser'],
     ]
     vpipe_table = Table(vpipe_data, colWidths=[1.2*cm, 3*cm, 9.5*cm])
     vpipe_table.setStyle(TableStyle([

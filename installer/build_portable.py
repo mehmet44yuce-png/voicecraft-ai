@@ -47,6 +47,14 @@ def copy_app_files():
     # launcher
     shutil.copy2(os.path.join(ROOT, 'installer', 'launcher.py'), DIST)
 
+    # setup_compat.py (Setup.bat tarafindan cagrilir — uyumluluk yamalari)
+    shutil.copy2(os.path.join(ROOT, 'setup_compat.py'), DIST)
+
+    # installer/ klasoru: setup_packages.py (Setup.bat tarafindan cagrilir)
+    installer_dist = os.path.join(DIST, 'installer')
+    os.makedirs(installer_dist, exist_ok=True)
+    shutil.copy2(os.path.join(ROOT, 'installer', 'setup_packages.py'), installer_dist)
+
     # updater.py + version.json
     for f in ['updater.py', 'version.json']:
         src = os.path.join(ROOT, f)
@@ -76,39 +84,114 @@ def copy_ffmpeg():
 
     print(f'[3/6] FFmpeg kopyalandı: {dest_bin}')
 
-def create_bat_launcher():
-    """Windows BAT başlatıcı oluştur."""
-    bat_content = '''@echo off
-title VoiceCraft AI
+def create_bat_launchers():
+    """Windows BAT dosyalarini olustur: Setup.bat + VoiceCraft-AI.bat"""
+
+    # ── Setup.bat ────────────────────────────────────────────────────────
+    setup_content = '''@echo off
+setlocal enabledelayedexpansion
+title VoiceCraft AI -- Kurulum Sihirbazi
+chcp 65001 >nul 2>nul
+
 echo.
-echo   ╔══════════════════════════════════════╗
-echo   ║       VoiceCraft AI — Portable       ║
-echo   ║   Ses ve Video Editoru               ║
-echo   ╚══════════════════════════════════════╝
+echo  ============================================
+echo   VoiceCraft AI -- Kurulum Sihirbazi
+echo  ============================================
 echo.
 
-REM FFmpeg PATH'e ekle
-set PATH=%~dp0bin;%PATH%
-
-REM Python kontrol
+echo [1/3] Python kontrol ediliyor...
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [HATA] Python bulunamadi!
-    echo Python 3.12+ yukleyin: https://python.org
+    echo  [HATA] Python bulunamadi!
+    echo  Python 3.12+ yukleyin: https://python.org
+    echo  Kurulum sirasinda "Add to PATH" secenegini isaretleyin.
     pause
     exit /b 1
 )
 
-echo [*] Sunucu baslatiliyor...
+for /f "tokens=2" %%v in (\'python --version 2^>^&1\') do set PYVER=%%v
+echo  [OK] Python !PYVER! bulundu
+
+for /f "tokens=1,2 delims=." %%a in ("!PYVER!") do (
+    set PY_MAJ=%%a
+    set PY_MIN=%%b
+)
+if !PY_MAJ! LSS 3 goto :pyerr
+if !PY_MAJ! EQU 3 if !PY_MIN! LSS 12 goto :pyerr
+goto :pyok
+:pyerr
+echo  [HATA] Python 3.12+ gerekli. https://python.org
+pause
+exit /b 1
+:pyok
+
 echo.
-python "%~dp0launcher.py"
+echo [2/3] Virtual environment hazirlaniyor...
+set VENV=%~dp0.venv
+set VENV_PY=%VENV%\\Scripts\\python.exe
+
+if not exist "!VENV_PY!" (
+    python -m venv "!VENV!"
+    if errorlevel 1 ( echo  [HATA] venv olusturulamadi! & pause & exit /b 1 )
+    "!VENV_PY!" -m pip install --upgrade pip --quiet
+)
+echo  [OK] Virtual environment hazir
+
+echo.
+echo [3/3] Paket kurulumu (10-30 dk surebilir)...
+echo.
+"!VENV_PY!" "%~dp0installer\\setup_packages.py"
+if errorlevel 1 (
+    echo  [HATA] Kurulum tamamlanamadi!
+    pause
+    exit /b 1
+)
+
+echo.
+echo  ============================================
+echo   [OK] Kurulum tamamlandi!
+echo   Baslatmak icin: VoiceCraft-AI.bat
+echo  ============================================
+echo.
+pause
+'''
+    setup_path = os.path.join(DIST, 'Setup.bat')
+    with open(setup_path, 'w', encoding='utf-8') as f:
+        f.write(setup_content)
+
+    # ── VoiceCraft-AI.bat ─────────────────────────────────────────────
+    run_content = '''@echo off
+setlocal enabledelayedexpansion
+title VoiceCraft AI
+chcp 65001 >nul 2>nul
+
+echo.
+echo  ============================================
+echo   VoiceCraft AI -- Baslatiyor
+echo  ============================================
+echo.
+
+set PATH=%~dp0bin;%PATH%
+set VENV_PY=%~dp0.venv\\Scripts\\python.exe
+
+if not exist "!VENV_PY!" (
+    echo  [!] Kurulum yapilmamis -- once Setup.bat calistirin.
+    pause
+    exit /b 1
+)
+
+echo  [*] Sunucu baslatiliyor...
+echo.
+"!VENV_PY!" "%~dp0launcher.py"
+echo.
+echo  [*] Sunucu kapandi.
 pause
 '''
     bat_path = os.path.join(DIST, 'VoiceCraft-AI.bat')
     with open(bat_path, 'w', encoding='utf-8') as f:
-        f.write(bat_content)
+        f.write(run_content)
 
-    print('[4/6] BAT başlatıcı oluşturuldu')
+    print('[4/6] BAT dosyalari olusturuldu (Setup.bat + VoiceCraft-AI.bat)')
 
 def create_requirements():
     """requirements.txt oluştur."""
@@ -122,23 +205,76 @@ def create_requirements():
 
     # Ayrıca minimal requirements da oluştur
     minimal = """# VoiceCraft AI — Minimal Requirements
-flask>=3.0
-flask-cors>=4.0
-anthropic>=0.39
-torch>=2.0
-torchaudio>=2.0
-faster-whisper>=1.0
+#
+# KURULUM SIRASI (onemli — once PyTorch, sonra digerler):
+#
+# ADIM 1 — PyTorch (RTX 40/50 serisi Blackwell/Ada icin cu128 zorunlu):
+#   pip install torch==2.11.0 torchaudio==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+#   (RTX 30xx ve oncesi icin: --index-url https://download.pytorch.org/whl/cu121)
+#
+# ADIM 2 — Bu dosyadaki paketler (normal pip ile):
+#   pip install -r requirements-minimal.txt
+#
+# ADIM 3 — Resemble Enhance (deepspeed olmadan, --no-deps gerekli):
+#   pip install resemble-enhance==0.0.1 --no-deps
+#   Sonra 4 dosyada deepspeed import'larini try/except ile sar (README'ye bak)
+#
+# ADIM 4 — DeepFilterNet / torchaudio 2.11 yaması:
+#   df/io.py icinde AudioMetaData ve ta.info() uyumsuzluklarini yama
+#
+# ADIM 5 — numpy surum sabitleme (deepfilternet <2.0, pyannote >=2.0 catismasi):
+#   pip install "numpy==1.26.4"  # 1.26.x her ikisiyle de calisiyor
+#
+# ADIM 6 — Resemble Enhance model (Git LFS ile):
+#   cd .venv/Lib/site-packages/resemble_enhance
+#   git clone https://huggingface.co/ResembleAI/resemble-enhance model_repo
+#   cd model_repo && git lfs install && git lfs pull
+
+# --- Web Framework ---
+flask>=3.1
+flask-cors>=6.0
+Werkzeug>=3.1
+
+# --- Anthropic / AI API ---
+anthropic>=0.94
+requests>=2.33
+python-dotenv>=1.2
+json-repair>=0.59
+
+# --- AI/ML Core ---
+faster-whisper>=1.2
+openai-whisper>=20250101
 demucs>=4.0
 noisereduce>=3.0
-soundfile>=0.12
-librosa>=0.10
-scipy>=1.10
-numpy>=1.24
-pyannote.audio>=3.0
+DeepFilterNet>=0.5.6
+silero-vad>=5.1
+voicefixer>=0.1.3
+# resemble-enhance: pip install resemble-enhance --no-deps (ayri adim, yukarda bak)
+
+# --- Audio ---
+soundfile>=0.13
+librosa>=0.11
+scipy>=1.17
+numpy==1.26.4
+pyloudnorm>=0.2
 pydub>=0.25
-DeepFilterNet>=0.5
+sounddevice>=0.5
+
+# --- Pyannote (Diarize) ---
+pyannote.audio>=4.0
+onnxruntime>=1.24
+
+# --- Sistem / GPU izleme ---
+psutil>=7.0
+nvidia-ml-py>=13.0
+pynvml>=13.0
+
+# --- Versiyon / Release ---
+GitPython>=3.1
+
+# --- UI / Tray ---
 pystray>=0.19
-Pillow>=10.0
+Pillow>=12.0
 """
     min_path = os.path.join(DIST, 'requirements-minimal.txt')
     with open(min_path, 'w') as f:
@@ -156,19 +292,19 @@ def create_readme():
 https://python.org adresinden indirin.
 Kurulum sırasında "Add to PATH" seçeneğini işaretleyin.
 
-### 2. GPU Desteği (önerilen)
-NVIDIA GPU varsa CUDA destekli PyTorch kurun:
+### 2. Kurulumu çalıştırın
 ```
-pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
+Setup.bat
 ```
+Bu script otomatik olarak:
+- GPU'nuzu tespit eder (RTX 40/50 -> cu128, RTX 30/öncesi -> cu121, yoksa CPU)
+- İzole bir virtual environment oluşturur (.venv/)
+- Gerekli tüm AI paketlerini kurar
+- Bilinen uyumluluk yamalarını uygular (DeepFilterNet, Resemble Enhance)
+- .env dosyasını oluşturur
 
-### 3. Paketleri yükleyin
-```
-pip install -r requirements-minimal.txt
-```
-
-### 4. HuggingFace Token (Diarize için)
-`.env` dosyasına HF token ekleyin:
+### 3. HuggingFace Token (Diarize için, opsiyonel)
+`.env` dosyasını düzenleyip HF token ekleyin:
 ```
 HF_TOKEN=hf_xxxxxxxxxxxxx
 ```
@@ -209,7 +345,7 @@ def main():
     clean()
     copy_app_files()
     copy_ffmpeg()
-    create_bat_launcher()
+    create_bat_launchers()
     create_requirements()
     create_readme()
 
