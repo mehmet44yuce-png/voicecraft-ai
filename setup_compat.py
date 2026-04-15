@@ -89,6 +89,21 @@ if not hasattr(ta, '_original_load'):
             return tensor, sr
     ta.load = _ta_load
 
+if not hasattr(ta, '_original_save'):
+    import soundfile as _sf3
+    ta._original_save = ta.save
+    def _ta_save(uri, src, sample_rate, **kwargs):
+        try:
+            return ta._original_save(uri, src, sample_rate, **kwargs)
+        except Exception:
+            arr = src.detach().cpu()
+            if arr.dtype == _torch.int16:
+                arr = arr.to(_torch.float32) / (1 << 15)
+            else:
+                arr = arr.to(_torch.float32)
+            _sf3.write(uri, arr.numpy().T, sample_rate)
+    ta.save = _ta_save
+
 """
 
 
@@ -107,7 +122,8 @@ def fix_deepfilter():
     # Inject full monkey-patch block if either part is missing
     need_info = "if not hasattr(ta, 'info')" not in txt
     need_load = "if not hasattr(ta, '_original_load')" not in txt
-    if need_info or need_load:
+    need_save = "if not hasattr(ta, '_original_save')" not in txt
+    if need_info or need_load or need_save:
         # Strip any old partial inject before re-injecting full block
         old_partial = (
             "if not hasattr(ta, 'info'):\n"
