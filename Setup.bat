@@ -92,6 +92,21 @@ REM === Uyumluluk yamalari ===
 echo  [*] Uyumluluk yamalari uygulanıyor...
 "!VENV_PY!" "%~dp0setup_compat.py"
 
+REM === .env olustur (yoksa) ===
+if not exist "%~dp0.env" (
+    if exist "%~dp0.env.default" (
+        echo  [*] .env olusturuluyor...
+        copy "%~dp0.env.default" "%~dp0.env" >nul
+        echo  [OK] HF Token ayarlandi
+    )
+) else (
+    echo  [OK] .env zaten mevcut
+)
+
+REM === Otomatik baslama kaydı ===
+echo  [*] Otomatik baslama ekleniyor...
+"!VENV_PY!" "%~dp0add_to_startup.py"
+
 echo.
 echo  ============================================
 echo   [OK] Kurulum basariyla tamamlandi!
