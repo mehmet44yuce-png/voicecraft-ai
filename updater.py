@@ -14,7 +14,9 @@ from pathlib import Path
 log = logging.getLogger('updater')
 
 # ── Yapilandirma ─────────────────────────────────────────────────────────────
-UPDATE_URL = "https://raw.githubusercontent.com/mehmet44yuce-png/voicecraft-ai/main/manifest.json"
+# GitHub API kullanilir (raw CDN'in aksine anlık güncelleme, cache yok)
+UPDATE_URL = "https://api.github.com/repos/mehmet44yuce-png/voicecraft-ai/contents/manifest.json"
+UPDATE_URL_RAW = "https://raw.githubusercontent.com/mehmet44yuce-png/voicecraft-ai/main/manifest.json"
 CHECK_TIMEOUT = 5
 DOWNLOAD_TIMEOUT = 60
 MAX_BACKUPS = 3
@@ -78,13 +80,32 @@ class Updater:
         return hashes
 
     # ── Guncelleme kontrol ───────────────────────────────────────────────────
+    def _fetch_manifest(self):
+        """Manifest JSON'u indir. GitHub API'den dener (cache yok), basarisizsa raw CDN'e duser."""
+        import urllib.request, base64
+        # 1. GitHub API (anlık, cache yok)
+        try:
+            req = urllib.request.Request(self.update_url,
+                                         headers={'User-Agent': 'VoiceCraftAI/1.0',
+                                                  'Accept': 'application/vnd.github.v3+json'})
+            with urllib.request.urlopen(req, timeout=CHECK_TIMEOUT) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                # API yaniti: { content: "<base64>", encoding: "base64", ... }
+                if isinstance(data, dict) and data.get('encoding') == 'base64':
+                    return json.loads(base64.b64decode(data['content']).decode('utf-8'))
+                return data  # beklenmedik format, dogrudan dene
+        except Exception as e1:
+            log.warning(f'[updater] GitHub API manifest hatasi: {e1}, raw CDN deneniyor...')
+        # 2. Raw CDN fallback
+        raw_url = UPDATE_URL_RAW
+        req2 = urllib.request.Request(raw_url, headers={'User-Agent': 'VoiceCraftAI/1.0'})
+        with urllib.request.urlopen(req2, timeout=CHECK_TIMEOUT) as resp2:
+            return json.loads(resp2.read().decode('utf-8'))
+
     def check_for_updates(self):
         """Uzak manifest'i kontrol et, guncelleme varsa bilgi don."""
-        import urllib.request
         try:
-            req = urllib.request.Request(self.update_url, headers={'User-Agent': 'VoiceCraftAI/1.0'})
-            with urllib.request.urlopen(req, timeout=CHECK_TIMEOUT) as resp:
-                manifest = json.loads(resp.read().decode('utf-8'))
+            manifest = self._fetch_manifest()
 
             local = self.get_local_version()
             local_ver = local.get('version', '0.0.0')
