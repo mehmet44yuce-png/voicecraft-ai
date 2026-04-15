@@ -1571,7 +1571,7 @@ except Exception as e:
 _so_jobs = {}   # job_id → {status, pct, step, result_path, orig_name, error}
 
 def _run_so_job(job_id, tmp_in, tmp_16k, tmp_bp, tmp_out, tmp_concat,
-                threshold, min_ms, pad_ms, bandpass, orig_name):
+                threshold, min_ms, pad_ms, bandpass, orig_name, zero_out=False):
     job = _so_jobs[job_id]
     bp_path = tmp_16k
     try:
@@ -1660,22 +1660,44 @@ def _run_so_job(job_id, tmp_in, tmp_16k, tmp_bp, tmp_out, tmp_concat,
             raise RuntimeError('VAD hiç konuşma bölgesi bulamadı')
         log.info(f'[so] {len(segs)} segment')
 
-        # 4. ffmpeg concat — segmentler arasına 120ms sessizlik ekle (doğal geçiş)
-        job['pct'] = 85; job['step'] = f'4/4 — {len(segs)} konuşma bölgesi birleştiriliyor...'
-        silence_path = bp_path.replace(chr(92), '/')
-        with open(tmp_concat, 'w', encoding='utf-8') as fh:
-            for i, s in enumerate(segs):
-                # Her segmentin başına 85ms, sonuna 85ms pad (orijinal 60ms + 25ms nefes)
-                start = max(0.0, s['start'] - 0.085)
-                end   = s['end'] + 0.085
-                fh.write(f"file '{silence_path}'\n")
-                fh.write(f"inpoint {start:.3f}\noutpoint {end:.3f}\n")
-        r2 = subprocess.run(
-            ['ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', tmp_concat,
-             '-ar', '44100', '-q:a', '2', tmp_out],
-            capture_output=True, timeout=240)
-        if r2.returncode != 0:
-            raise RuntimeError('ffmpeg concat hatası: ' + r2.stderr.decode('utf-8', errors='replace')[-200:])
+        # 4. Çıktı oluştur
+        job['pct'] = 85; job['step'] = f'4/4 — {len(segs)} konuşma bölgesi işleniyor...'
+        if zero_out:
+            # Video pipeline modu: sessizlikleri sıfırla, süreyi koru.
+            # Böylece clean audio orijinal video ile aynı zaman damgasına sahip olur.
+            import soundfile as sf
+            import numpy as np
+            data, orig_sr = sf.read(tmp_in, always_2d=True)
+            out_data = np.zeros_like(data)
+            for s in segs:
+                s_start = max(0, int((s['start'] - pad_ms / 1000.0) * orig_sr))
+                s_end   = min(len(data), int((s['end'] + pad_ms / 1000.0) * orig_sr))
+                out_data[s_start:s_end] = data[s_start:s_end]
+            tmp_wav_zo = tmp_out.replace('.mp3', '_zo.wav')
+            sf.write(tmp_wav_zo, out_data, orig_sr)
+            r2 = subprocess.run(
+                ['ffmpeg', '-y', '-i', tmp_wav_zo, '-q:a', '2', tmp_out],
+                capture_output=True, timeout=240)
+            try: os.unlink(tmp_wav_zo)
+            except Exception: pass
+            if r2.returncode != 0:
+                raise RuntimeError('ffmpeg mp3 dönüştürme hatası: ' + r2.stderr.decode('utf-8', errors='replace')[-200:])
+        else:
+            # Ses modülü modu: sessizlikleri kaldır, yalnızca konuşmaları birleştir
+            silence_path = bp_path.replace(chr(92), '/')
+            with open(tmp_concat, 'w', encoding='utf-8') as fh:
+                for i, s in enumerate(segs):
+                    # Her segmentin başına 85ms, sonuna 85ms pad (orijinal 60ms + 25ms nefes)
+                    start = max(0.0, s['start'] - 0.085)
+                    end   = s['end'] + 0.085
+                    fh.write(f"file '{silence_path}'\n")
+                    fh.write(f"inpoint {start:.3f}\noutpoint {end:.3f}\n")
+            r2 = subprocess.run(
+                ['ffmpeg', '-y', '-f', 'concat', '-safe', '0', '-i', tmp_concat,
+                 '-ar', '44100', '-q:a', '2', tmp_out],
+                capture_output=True, timeout=240)
+            if r2.returncode != 0:
+                raise RuntimeError('ffmpeg concat hatası: ' + r2.stderr.decode('utf-8', errors='replace')[-200:])
 
         job['pct'] = 100; job['status'] = 'done'
         job['result_path'] = tmp_out; job['orig_name'] = orig_name
@@ -1698,6 +1720,7 @@ def speech_only_start():
     min_ms    = int(request.form.get('min_ms', '50'))
     pad_ms    = int(request.form.get('pad_ms', '150'))
     bandpass  = request.form.get('bandpass', 'true').lower() == 'true'
+    zero_out  = request.form.get('zero_out', 'false').lower() == 'true'
 
     ts  = int(time.time() * 1000)
     job_id = f'so_{ts}'
@@ -1712,7 +1735,7 @@ def speech_only_start():
     _so_jobs[job_id] = {'status': 'running', 'pct': 0, 'step': 'Başlatılıyor...', 'result_path': None, 'error': None}
     t = threading.Thread(target=_run_so_job, args=(
         job_id, tmp_in, tmp_16k, tmp_bp, tmp_out, tmp_concat,
-        threshold, min_ms, pad_ms, bandpass, f.filename or 'ses'), daemon=True)
+        threshold, min_ms, pad_ms, bandpass, f.filename or 'ses', zero_out), daemon=True)
     t.start()
     return jsonify({'success': True, 'job_id': job_id})
 

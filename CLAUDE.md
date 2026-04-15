@@ -204,11 +204,24 @@ RTX 5070 Ti (Blackwell) + cuDNN'in RNN kerneli GRU forward pass'i patlatiyor.
 - Sonra `concat demuxer -c copy` ile stream copy birlestirme (re-encode YOK, ms cinsinden)
 - Filter graph YOK → bellek/scheduler sorunu yok
 
-### Video A/V senkron drift
+### Video A/V senkron drift (eski sorun — cozuldu)
 Iki re-encode pass (merge → cut) audio sample boundary ile video frame boundary
 arasinda kucuk kaymalar BIRIKTIRIYORDU → sonucta ses videodan once geliyordu.
 → **Tek-pass dual-input:** Her segment icin video ve ses ayri input olarak verilir, AYNI
    `-ss` ile ikisi de seek edilir → frame-perfect senkron, tek re-encode, merge adimi yok.
+
+### SpeechOnly — Video pipeline'da ses videoya gore cok once geliyor
+**Neden:** `_run_so_job` sessizlikleri kaldirip sadece konusmalari birlestiriyor (ffmpeg concat).
+Bu audio dosyasini orijinal videodan cok daha kisa yapiyor (ornek: 60dk video → 15dk audio).
+Sonraki adimlar (VAD, video-cut) bu kisaltilmis audioyu kullaniyor → zaman damgalari uyusmuyor.
+
+**Cozum:** Video pipeline'dan cagrildiginda `zero_out=true` parametresi gonderilir.
+`zero_out` modunda SpeechOnly: sessizlikleri kaldirmak yerine **sifirlar** (ayni sure,
+konusma disi kisimlar susturulur, konusma kisilari aynen korunur).
+- `server.py:_run_so_job` — `zero_out=True` parametresi, soundfile ile yerinde sifirlama
+- `public/app.js` — video pipeline adim 5'te `fd5s.append('zero_out', 'true')`
+- Ses modulu (ses pipeline) eski concat modunu kullanmaya devam eder, degismedi.
+**DIKKAT:** Bu degisiklikten onceki `video_step_5` cache gecersiz — pipeline yeniden calistirilmali.
 
 ### NVENC + libx264 fallback
 NVENC patlasa libx264'e otomatik gecis. `USE_NVENC=0` env var ile zorla CPU.
@@ -325,3 +338,4 @@ Script otomatik: degisen dosyalari tespit eder → manifest yazar → commit + p
 14. Frontend `vStep(num, text, color)` aynı num ile tekrar cagrilirsa **mevcut satiri replace** eder, yeni satir eklemez (id'li satir)
 15. Her ses-uretici tamamlanan adim icin frontend butonlari (Sesi Dinle/Indir, Video Izle/Indir) otomatik gosterilir; ses uretmeyen adimlar (8 VAD, 9 Diarize, 10 Kesim) icin gosterilmez
 16. Uzun ffmpeg islemleri icin `_ffmpeg_run_with_progress` helper kullan (canli stderr parse, `job['pct']` ve `job['step']` guncelle)
+17. **SpeechOnly video pipeline'da `zero_out=true` ile cagrilmali** — `zero_out=false` (varsayilan) sessizlikleri kaldirir ve audio kisalir → A/V desync. Video pipeline adim 5'te `fd5s.append('zero_out', 'true')` zorunlu. Ses modulu eski modu kullanir.

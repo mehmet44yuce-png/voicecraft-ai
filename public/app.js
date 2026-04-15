@@ -955,6 +955,7 @@ async function videoStartPipeline() {
       try {
         var fd5s = new FormData();
         fd5s.append('file', currentFile, currentFile.name);
+        fd5s.append('zero_out', 'true');  // Video pipeline: sessizliği sıfırla, süreyi koru (A/V sync)
         var r5s = await pipeFetch('/api/speech-only/start', { method: 'POST', body: fd5s }, 60000);
         if (r5s.ok) {
           var d5s = await r5s.json();
