@@ -1,13 +1,28 @@
 {
-  "version": "1.1.5",
+  "version": "1.1.6",
   "release_date": "2026-04-15",
   "min_version": "1.0.0",
-  "changelog": "CLAUDE.md guncellendi: Setup.bat otomatik kurulum, admin panel HF/Ollama, Resemble yamasi",
+  "changelog": "Video A/V sync duzeltme, pipeline Devam Et butonu, baslat butonu sifirdan baslar",
   "files": {
+    "public/app.js": {
+      "sha256": "e869ea1cc9884bfe0037d436b46c9d7e5a8e9938008396bb7c1b9885aee5e36e",
+      "size": 568987,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.6/app.js"
+    },
+    "public/index.html": {
+      "sha256": "1a256ff942fe5d6bc37781ea7f17ed087ba4ca496d700eb0a366e360572750b0",
+      "size": 36496,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.6/index.html"
+    },
+    "server.py": {
+      "sha256": "6bf28f7cecb66491753108924c92d102903f7a7520bea55cb608c8797b0d502a",
+      "size": 212111,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.6/server.py"
+    },
     "CLAUDE.md": {
       "sha256": "824132c651ffa4bf2a786664db61f22afb0b88ffb4f4b46df87ce6e2c9ee4bfc",
       "size": 18245,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.5/CLAUDE.md"
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.1.6/CLAUDE.md"
     }
   },
   "delete": []
