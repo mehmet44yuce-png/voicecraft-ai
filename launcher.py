@@ -133,7 +133,19 @@ def wait_for_server(timeout=60):
 
 
 def open_browser():
-    webbrowser.open(URL)
+    """Varsayilan tarayiciyi ac. Windows'ta msedge veya sistem default."""
+    opened = False
+    if sys.platform == 'win32':
+        # Once varsayilan tarayici ile dene
+        try:
+            import subprocess as _sp
+            _sp.Popen(['cmd', '/c', 'start', '', URL],
+                      creationflags=subprocess.CREATE_NO_WINDOW)
+            opened = True
+        except Exception:
+            pass
+    if not opened:
+        webbrowser.open(URL)
 
 
 def stop_server():
@@ -147,8 +159,23 @@ def stop_server():
         server_process = None
 
 
+def is_server_running():
+    """Sunucu zaten calisiyor mu kontrol et."""
+    import urllib.request
+    try:
+        urllib.request.urlopen(f'{URL}/api/system-stats', timeout=2)
+        return True
+    except:
+        return False
+
+
 def run_with_restart():
     global server_process
+    # Sunucu zaten calısıyorsa sadece tarayıcı ac
+    if is_server_running():
+        print(f'[OK] Sunucu zaten calisiyor: {URL}')
+        open_browser()
+        return
     first_run = True
     while True:
         print('[*] Sunucu baslatiliyor...')

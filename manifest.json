@@ -1,18 +1,13 @@
 {
-  "version": "1.2.0",
+  "version": "1.2.1",
   "release_date": "2026-04-16",
   "min_version": "1.0.0",
-  "changelog": "launcher.py: masaustu kisayolu olusturur, server_output.log yazar; CLAUDE.md guncellendi",
+  "changelog": "launcher: sunucu zaten cal\u0131s\u0131yorsa sadece taray\u0131c\u0131 ac, cmd start ile varsayilan taray\u0131c\u0131",
   "files": {
     "launcher.py": {
-      "sha256": "c7849f31bd871232e31e16c69774eafe578a6d7f7a75bc5eed1f7a04eddb0e33",
-      "size": 7066,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.2.0/launcher.py"
-    },
-    "CLAUDE.md": {
-      "sha256": "a31766664072c51273972451f3cea136524374a2d3ca1fc808bc37b066ab0580",
-      "size": 18285,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.2.0/CLAUDE.md"
+      "sha256": "b7a7732744f33c2926ee9e8f73f82635f3e5727835742d73cac5d80872f6cdc1",
+      "size": 7903,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.2.1/launcher.py"
     }
   },
   "delete": []
