@@ -1,13 +1,18 @@
 {
-  "version": "1.0.8",
+  "version": "1.0.9",
   "release_date": "2026-04-15",
   "min_version": "1.0.0",
-  "changelog": "ta.save torchcodec hatasi duzeltildi - DeepFilterNet GPU modda tamamlanip kay\u0131t edilebiliyor",
+  "changelog": "Yeni kurulum otomasyonu: ta.save soundfile fallback installer'a eklendi",
   "files": {
+    "installer/setup_packages.py": {
+      "sha256": "b5f395f9d9f08f0477a3ddde2915ccf7b1193d3164b2c787811a85cafab508b4",
+      "size": 18897,
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.9/setup_packages.py"
+    },
     "setup_compat.py": {
       "sha256": "7758947e61daf50787fd16417117efb2261d2a694e7f42b62d7608fd7ae195a2",
       "size": 12763,
-      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.8/setup_compat.py"
+      "url": "https://github.com/mehmet44yuce-png/voicecraft-ai/releases/download/v1.0.9/setup_compat.py"
     }
   },
   "delete": []
